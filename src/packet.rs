@@ -4,6 +4,7 @@ use std::str::FromStr;
 use AprsError;
 use AprsMessage;
 use AprsPosition;
+use AprsStatus;
 use Callsign;
 use EncodeError;
 
@@ -72,6 +73,7 @@ impl AprsPacket {
 pub enum AprsData {
     Position(AprsPosition),
     Message(AprsMessage),
+    Status(AprsStatus),
     Unknown,
 }
 
@@ -82,6 +84,7 @@ impl FromStr for AprsData {
         Ok(match s.chars().next().unwrap_or(0 as char) {
             ':' => AprsData::Message(AprsMessage::from_str(&s[1..])?),
             '!' | '/' | '=' | '@' => AprsData::Position(AprsPosition::from_str(s)?),
+            '>' => AprsData::Status(AprsStatus::from_str(&s[1..])?),
             _ => AprsData::Unknown,
         })
     }
@@ -95,6 +98,9 @@ impl AprsData {
             }
             Self::Message(m) => {
                 write!(buf, "{}", m)?;
+            }
+            Self::Status(s) => {
+                write!(buf, "{}", s)?;
             }
             Self::Unknown => return Err(EncodeError::InvalidData),
         }
@@ -156,6 +162,27 @@ mod tests {
     }
 
     #[test]
+    fn parse_status() {
+        let result = r"ICA3D17F2>APRS,qAS,dl4mea:>312359zStatus seems okay!"
+            .parse::<AprsPacket>()
+            .unwrap();
+        assert_eq!(result.from, Callsign::new("ICA3D17F2", None));
+        assert_eq!(result.to, Callsign::new("APRS", None));
+        assert_eq!(
+            result.via,
+            vec![Callsign::new("qAS", None), Callsign::new("dl4mea", None),]
+        );
+
+        match result.data {
+            AprsData::Status(msg) => {
+                assert_eq!(msg.timestamp, Some(Timestamp::DDHHMM(31, 23, 59)));
+                assert_eq!(msg.comment, "Status seems okay!");
+            }
+            _ => panic!("Unexpected data type"),
+        }
+    }
+
+    #[test]
     fn e2e_serialize_deserialize() {
         let valids = vec![
             r"ICA3D17F2>APRS,qAS,dl4mea:/074849h4821.61N\01224.49E^322/103/A=003054 !W09! id213D17F2 -039fpm +0.0rot 2.5dB 3e -0.0kHz gps1x1",
@@ -164,6 +191,8 @@ mod tests {
             r"ICA3D17F2>APRS,qAS,dl4mea:=4821.61N\01224.49E^322/103/A=003054 !W09! id213D17F2 -039fpm +0.0rot 2.5dB 3e -0.0kHz gps1x1",
             r"ICA3D17F2>Aprs,qAS,dl4mea::DEST     :Hello World! This msg has a : colon {32975",
             r"ICA3D17F2>Aprs,qAS,dl4mea::DESTINATI:Hello World! This msg has a : colon ",
+            r"ICA3D17F2>APRS,qAS,dl4mea:>312359zStatus seems okay!",
+            r"ICA3D17F2>APRS,qAS,dl4mea:>184050hAlso with HMS format...",
         ];
 
         for v in valids {
