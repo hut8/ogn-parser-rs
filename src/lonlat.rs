@@ -1,9 +1,11 @@
+use serde::Serialize;
+
 use crate::AprsError;
 use crate::EncodeError;
 use std::ops::Deref;
 use std::str::FromStr;
 
-#[derive(Debug, Copy, Clone, PartialOrd, PartialEq, Default)]
+#[derive(Debug, Copy, Clone, PartialOrd, PartialEq, Default, Serialize)]
 pub struct Latitude(f64);
 
 impl Deref for Latitude {
@@ -51,7 +53,7 @@ impl FromStr for Latitude {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialOrd, PartialEq, Default)]
+#[derive(Debug, Copy, Clone, PartialOrd, PartialEq, Default, Serialize)]
 pub struct Longitude(f64);
 
 impl Deref for Longitude {

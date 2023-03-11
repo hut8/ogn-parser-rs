@@ -1,9 +1,12 @@
 use std::fmt::{Display, Formatter};
 
+use serde::Deserialize;
+use serde::Serialize;
+
 use crate::AprsError;
 use crate::FromStr;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AprsMessage {
     pub addressee: String,
     pub text: String,

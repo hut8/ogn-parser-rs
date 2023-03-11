@@ -10,10 +10,12 @@
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
+use serde::Serialize;
+
 use crate::AprsError;
 use crate::Timestamp;
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Serialize)]
 pub struct AprsStatus {
     pub timestamp: Option<Timestamp>,
     pub comment: String,
@@ -54,6 +56,9 @@ impl Display for AprsStatus {
 
 #[cfg(test)]
 mod tests {
+    use csv::WriterBuilder;
+    use std::io::stdout;
+
     use super::*;
 
     #[test]
@@ -82,5 +87,13 @@ mod tests {
         let result = "235959hHi there!".parse::<AprsStatus>().unwrap();
         assert_eq!(result.timestamp, Some(Timestamp::HHMMSS(23, 59, 59)));
         assert_eq!(result.comment, "Hi there!");
+    }
+
+    #[test]
+    fn test_serialize() {
+        let aprs_position = "235959hHi there!".parse::<AprsStatus>().unwrap();
+        let mut wtr = WriterBuilder::new().from_writer(stdout());
+        wtr.serialize(aprs_position).unwrap();
+        wtr.flush().unwrap();
     }
 }

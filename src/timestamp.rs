@@ -2,6 +2,7 @@ use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
 use crate::AprsError;
+use serde::Serialize;
 
 #[derive(Eq, PartialEq, Debug, Clone)]
 pub enum Timestamp {
@@ -52,8 +53,20 @@ impl Display for Timestamp {
     }
 }
 
+impl Serialize for Timestamp {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&format!("{}", self))
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use csv::WriterBuilder;
+    use std::io::stdout;
+
     use super::*;
 
     #[test]
@@ -88,5 +101,13 @@ mod tests {
             "123a56z".parse::<Timestamp>(),
             Err(AprsError::InvalidTimestamp("123a56z".to_owned()))
         );
+    }
+
+    #[test]
+    fn test_serialize() {
+        let timestamp: Timestamp = "123456z".parse().unwrap();
+        let mut wtr = WriterBuilder::new().from_writer(stdout());
+        wtr.serialize(timestamp).unwrap();
+        wtr.flush().unwrap();
     }
 }

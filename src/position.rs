@@ -1,12 +1,14 @@
 use std::fmt::Write;
 use std::str::FromStr;
 
+use serde::Serialize;
+
 use crate::lonlat::{encode_latitude, encode_longitude, Latitude, Longitude};
 use crate::AprsError;
 use crate::EncodeError;
 use crate::Timestamp;
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Serialize)]
 pub struct AprsPosition {
     pub timestamp: Option<Timestamp>,
     pub messaging_supported: bool,
@@ -101,6 +103,8 @@ impl AprsPosition {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use csv::WriterBuilder;
+    use std::io::stdout;
 
     #[test]
     fn parse_without_timestamp_or_messaging() {
@@ -165,5 +169,15 @@ mod tests {
         assert_eq!(result.symbol_table, '\\');
         assert_eq!(result.symbol_code, '^');
         assert_eq!(result.comment, "322/103/A=003054");
+    }
+
+    #[test]
+    fn test_serialize() {
+        let aprs_position = r"@074849h4821.61N\01224.49E^322/103/A=003054"
+            .parse::<AprsPosition>()
+            .unwrap();
+        let mut wtr = WriterBuilder::new().from_writer(stdout());
+        wtr.serialize(aprs_position).unwrap();
+        wtr.flush().unwrap();
     }
 }
