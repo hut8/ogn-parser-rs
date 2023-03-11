@@ -1,12 +1,12 @@
 use std::fmt::Write;
 use std::str::FromStr;
 
-use AprsError;
-use AprsMessage;
-use AprsPosition;
-use AprsStatus;
-use Callsign;
-use EncodeError;
+use crate::AprsError;
+use crate::AprsMessage;
+use crate::AprsPosition;
+use crate::AprsStatus;
+use crate::Callsign;
+use crate::EncodeError;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct AprsPacket {
@@ -112,7 +112,7 @@ impl AprsData {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use Timestamp;
+    use crate::Timestamp;
 
     #[test]
     fn parse() {

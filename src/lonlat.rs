@@ -1,7 +1,7 @@
+use crate::AprsError;
+use crate::EncodeError;
 use std::ops::Deref;
 use std::str::FromStr;
-use AprsError;
-use EncodeError;
 
 #[derive(Debug, Copy, Clone, PartialOrd, PartialEq, Default)]
 pub struct Latitude(f32);

@@ -10,8 +10,8 @@
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-use AprsError;
-use Timestamp;
+use crate::AprsError;
+use crate::Timestamp;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct AprsStatus {

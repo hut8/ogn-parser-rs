@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 
-use AprsError;
-use FromStr;
+use crate::AprsError;
+use crate::FromStr;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AprsMessage {

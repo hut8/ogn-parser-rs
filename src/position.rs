@@ -1,10 +1,10 @@
 use std::fmt::Write;
 use std::str::FromStr;
 
-use lonlat::{encode_latitude, encode_longitude, Latitude, Longitude};
-use AprsError;
-use EncodeError;
-use Timestamp;
+use crate::lonlat::{encode_latitude, encode_longitude, Latitude, Longitude};
+use crate::AprsError;
+use crate::EncodeError;
+use crate::Timestamp;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct AprsPosition {
