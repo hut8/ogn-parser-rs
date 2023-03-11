@@ -3,6 +3,7 @@ use serde::Serialize;
 use crate::AprsError;
 use crate::EncodeError;
 use std::ops::Deref;
+use std::ops::DerefMut;
 use std::str::FromStr;
 
 #[derive(Debug, Copy, Clone, PartialOrd, PartialEq, Default, Serialize)]
@@ -13,6 +14,12 @@ impl Deref for Latitude {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl DerefMut for Latitude {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -61,6 +68,12 @@ impl Deref for Longitude {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl DerefMut for Longitude {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -181,6 +194,16 @@ mod tests {
         );
         assert_relative_eq!(*"00000.00E".parse::<Longitude>().unwrap(), 0.0);
         assert_relative_eq!(*"00000.00W".parse::<Longitude>().unwrap(), 0.0);
+    }
+
+    #[test]
+    fn test_deref_mut() {
+        let mut lat = "4903.50N".parse::<Latitude>().unwrap();
+        let mut lon = "12903.50E".parse::<Longitude>().unwrap();
+        *lat -= 1.0;
+        *lon -= 1.0;
+        assert_relative_eq!(*lat, 48.05833333333333);
+        assert_relative_eq!(*lon, 128.05833333333334);
     }
 
     #[test]
