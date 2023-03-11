@@ -107,8 +107,8 @@ mod tests {
         let result = r"!4903.50N/07201.75W-".parse::<AprsPosition>().unwrap();
         assert_eq!(result.timestamp, None);
         assert_eq!(result.messaging_supported, false);
-        assert_relative_eq!(*result.latitude, 49.05833);
-        assert_relative_eq!(*result.longitude, -72.02916);
+        assert_relative_eq!(*result.latitude, 49.05833333333333);
+        assert_relative_eq!(*result.longitude, -72.02916666666667);
         assert_eq!(result.symbol_table, '/');
         assert_eq!(result.symbol_code, '-');
         assert_eq!(result.comment, "");
@@ -120,8 +120,8 @@ mod tests {
             .parse::<AprsPosition>()
             .unwrap();
         assert_eq!(result.timestamp, None);
-        assert_relative_eq!(*result.latitude, 49.05833);
-        assert_relative_eq!(*result.longitude, -72.02916);
+        assert_relative_eq!(*result.latitude, 49.05833333333333);
+        assert_relative_eq!(*result.longitude, -72.02916666666667);
         assert_eq!(result.symbol_table, '/');
         assert_eq!(result.symbol_code, '-');
         assert_eq!(result.comment, "Hello/A=001000");
@@ -134,8 +134,8 @@ mod tests {
             .unwrap();
         assert_eq!(result.timestamp, Some(Timestamp::HHMMSS(7, 48, 49)));
         assert_eq!(result.messaging_supported, false);
-        assert_relative_eq!(*result.latitude, 48.360166);
-        assert_relative_eq!(*result.longitude, 12.408166);
+        assert_relative_eq!(*result.latitude, 48.36016666666667);
+        assert_relative_eq!(*result.longitude, 12.408166666666666);
         assert_eq!(result.symbol_table, '\\');
         assert_eq!(result.symbol_code, '^');
         assert_eq!(result.comment, "322/103/A=003054");
@@ -146,8 +146,8 @@ mod tests {
         let result = r"=4903.50N/07201.75W-".parse::<AprsPosition>().unwrap();
         assert_eq!(result.timestamp, None);
         assert_eq!(result.messaging_supported, true);
-        assert_relative_eq!(*result.latitude, 49.05833);
-        assert_relative_eq!(*result.longitude, -72.02916);
+        assert_relative_eq!(*result.latitude, 49.05833333333333);
+        assert_relative_eq!(*result.longitude, -72.02916666666667);
         assert_eq!(result.symbol_table, '/');
         assert_eq!(result.symbol_code, '-');
         assert_eq!(result.comment, "");
@@ -160,8 +160,8 @@ mod tests {
             .unwrap();
         assert_eq!(result.timestamp, Some(Timestamp::HHMMSS(7, 48, 49)));
         assert_eq!(result.messaging_supported, true);
-        assert_relative_eq!(*result.latitude, 48.360166);
-        assert_relative_eq!(*result.longitude, 12.408166);
+        assert_relative_eq!(*result.latitude, 48.36016666666667);
+        assert_relative_eq!(*result.longitude, 12.408166666666666);
         assert_eq!(result.symbol_table, '\\');
         assert_eq!(result.symbol_code, '^');
         assert_eq!(result.comment, "322/103/A=003054");

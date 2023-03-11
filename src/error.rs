@@ -25,9 +25,9 @@ pub enum AprsError {
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum EncodeError {
     #[error("Invalid Latitude: {0}")]
-    InvalidLatitude(f32),
+    InvalidLatitude(f64),
     #[error("Invalid Longitude: {0}")]
-    InvalidLongitude(f32),
+    InvalidLongitude(f64),
     #[error("Invalid Aprs Data")]
     InvalidData,
     #[error(transparent)]
