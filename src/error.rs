@@ -20,6 +20,8 @@ pub enum AprsError {
     InvalidMessageDestination(String),
     #[error("Invalid Message ID: {0}")]
     InvalidMessageId(String),
+    #[error("String contains non-ASCII characters: {0}")]
+    InvalidCoding(String),
 }
 
 #[derive(Debug, PartialEq, thiserror::Error)]

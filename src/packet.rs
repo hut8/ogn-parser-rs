@@ -20,6 +20,9 @@ impl FromStr for AprsPacket {
     type Err = AprsError;
 
     fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
+        if !s.is_ascii() {
+            return Err(AprsError::InvalidCoding(s.to_owned()));
+        }
         let header_delimiter = s
             .find(':')
             .ok_or_else(|| AprsError::InvalidPacket(s.to_owned()))?;
@@ -136,6 +139,14 @@ mod tests {
             }
             _ => panic!("Unexpected data type"),
         }
+    }
+
+    #[test]
+    fn parse_error_no_ascii() {
+        let result =
+            r"ICA3D17F2>APRS,qAS,dl4mea:/074849h4821.61N\01224.49E^322/103/A=003054 Hochkönig"
+                .parse::<AprsPacket>();
+        assert_eq!(result.is_err(), true);
     }
 
     #[test]
