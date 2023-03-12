@@ -4,6 +4,8 @@ pub enum AprsError {
     EmptyCallsign(String),
     #[error("Empty Callsign SSID: {0}")]
     EmptySSID(String),
+    #[error("Invalid Callsign SSID: {0}")]
+    InvalidSSID(String),
     #[error("Invalid Timestamp: {0}")]
     InvalidTimestamp(String),
     #[error("Unsupported Position Format: {0}")]

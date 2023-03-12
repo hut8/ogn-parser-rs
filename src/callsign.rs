@@ -8,14 +8,14 @@ use crate::AprsError;
 #[derive(Eq, PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct Callsign {
     pub call: String,
-    pub ssid: Option<String>,
+    pub ssid: Option<u8>,
 }
 
 impl Callsign {
-    pub fn new<T: Into<String>>(call: T, ssid: Option<T>) -> Callsign {
+    pub fn new<T: Into<String>>(call: T, ssid: Option<u8>) -> Callsign {
         Callsign {
             call: call.into(),
-            ssid: ssid.map(|ssid| ssid.into()),
+            ssid: ssid,
         }
     }
 }
@@ -35,13 +35,19 @@ impl FromStr for Callsign {
         }
 
         let (call, rest) = s.split_at(delimiter);
-        let ssid = &rest[1..rest.len()];
+        let part = &rest[1..rest.len()];
 
-        if ssid.is_empty() {
+        if part.is_empty() {
             return Err(AprsError::EmptySSID(s.to_owned()));
         }
 
-        Ok(Callsign::new(call, Some(ssid)))
+        let ssid = part.parse::<u8>().ok();
+
+        if ssid.is_some() {
+            Ok(Callsign::new(call, ssid))
+        } else {
+            Err(AprsError::InvalidSSID(s.to_owned()))
+        }
     }
 }
 
@@ -68,7 +74,7 @@ mod tests {
 
     #[test]
     fn parse_with_ssid() {
-        assert_eq!("ABCDEF-42".parse(), Ok(Callsign::new("ABCDEF", Some("42"))));
+        assert_eq!("ABCDEF-42".parse(), Ok(Callsign::new("ABCDEF", Some(42))));
     }
 
     #[test]
@@ -84,6 +90,14 @@ mod tests {
         assert_eq!(
             "ABCDEF-".parse::<Callsign>(),
             Err(AprsError::EmptySSID("ABCDEF-".to_owned()))
+        );
+    }
+
+    #[test]
+    fn invalid_ssid() {
+        assert_eq!(
+            "D-EKDF".parse::<Callsign>(),
+            Err(AprsError::InvalidSSID("D-EKDF".to_owned()))
         );
     }
 }
