@@ -180,4 +180,10 @@ mod tests {
         wtr.serialize(aprs_position).unwrap();
         wtr.flush().unwrap();
     }
+
+    #[test]
+    fn test_input_string_too_short() {
+        let result = "/13244".parse::<AprsPosition>();
+        assert!(result.is_err(), "Short input string should return an error");
+    }
 }
