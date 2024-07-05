@@ -28,6 +28,9 @@ impl FromStr for AprsPosition {
         // parse timestamp if necessary
         let has_timestamp = s.starts_with('@') || s.starts_with('/');
         let timestamp = if has_timestamp {
+            if s.len() < 8 {
+                return Err(AprsError::InvalidPosition(s.to_owned()));
+            }
             Some(s[1..8].parse()?)
         } else {
             None
