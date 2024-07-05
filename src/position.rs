@@ -24,33 +24,24 @@ impl FromStr for AprsPosition {
 
     fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
         let messaging_supported = s.starts_with('=') || s.starts_with('@');
-
-        // parse timestamp if necessary
         let has_timestamp = s.starts_with('@') || s.starts_with('/');
-        let timestamp = if has_timestamp {
-            if s.len() < 8 {
-                return Err(AprsError::InvalidPosition(s.to_owned()));
-            }
-            Some(s[1..8].parse()?)
-        } else {
-            None
+
+        // check for minimal message length
+        if (!has_timestamp && s.len() < 19) || (has_timestamp && s.len() < 26) {
+            return Err(AprsError::InvalidPosition(s.to_owned()));
         };
 
-        // strip leading type symbol and potential timestamp
-        let s = if has_timestamp {
-            &s[8..s.len()]
+        // Extract timestamp and remaining string
+        let (timestamp, s) = if has_timestamp {
+            (Some(s[1..8].parse()?), &s[8..])
         } else {
-            &s[1..s.len()]
+            (None, &s[1..])
         };
 
         // check for compressed position format
         let is_uncompressed_position = s.chars().take(1).all(|c| c.is_numeric());
         if !is_uncompressed_position {
             return Err(AprsError::UnsupportedPositionFormat(s.to_owned()));
-        }
-
-        if s.len() < 19 {
-            return Err(AprsError::InvalidPosition(s.to_owned()));
         }
 
         // parse position
