@@ -15,7 +15,7 @@ impl Callsign {
     pub fn new<T: Into<String>>(call: T, ssid: Option<u8>) -> Callsign {
         Callsign {
             call: call.into(),
-            ssid: ssid,
+            ssid,
         }
     }
 }
