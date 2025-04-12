@@ -3,10 +3,11 @@ use std::str::FromStr;
 
 use serde::Serialize;
 
-use crate::lonlat::{encode_latitude, encode_longitude, Latitude, Longitude};
 use crate::AprsError;
 use crate::EncodeError;
 use crate::Timestamp;
+use crate::lonlat::{Latitude, Longitude, encode_latitude, encode_longitude};
+use crate::position_comment::PositionComment;
 
 #[derive(PartialEq, Debug, Clone, Serialize)]
 pub struct AprsPosition {
@@ -16,7 +17,7 @@ pub struct AprsPosition {
     pub longitude: Longitude,
     pub symbol_table: char,
     pub symbol_code: char,
-    pub comment: String,
+    pub ogn: PositionComment,
 }
 
 impl FromStr for AprsPosition {
@@ -45,13 +46,23 @@ impl FromStr for AprsPosition {
         }
 
         // parse position
-        let latitude = s[0..8].parse()?;
-        let longitude = s[9..18].parse()?;
+        let mut latitude: Latitude = s[0..8].parse()?;
+        let mut longitude: Longitude = s[9..18].parse()?;
 
         let symbol_table = s.chars().nth(8).unwrap();
         let symbol_code = s.chars().nth(18).unwrap();
 
         let comment = &s[19..s.len()];
+
+        let ogn = comment.parse::<PositionComment>().unwrap();
+        *latitude += ogn
+            .additional_precision
+            .as_ref()
+            .map_or(0.0, |p| p.lat as f64);
+        *longitude += ogn
+            .additional_precision
+            .as_ref()
+            .map_or(0.0, |p| p.lon as f64);
 
         Ok(AprsPosition {
             timestamp,
@@ -60,7 +71,7 @@ impl FromStr for AprsPosition {
             longitude,
             symbol_table,
             symbol_code,
-            comment: comment.to_owned(),
+            ogn,
         })
     }
 }
@@ -82,12 +93,12 @@ impl AprsPosition {
 
         write!(
             buf,
-            "{}{}{}{}{}",
+            "{}{}{}{}{:#?}",
             encode_latitude(self.latitude)?,
             self.symbol_table,
             encode_longitude(self.longitude)?,
             self.symbol_code,
-            self.comment,
+            self.ogn,
         )?;
 
         Ok(())
@@ -109,7 +120,7 @@ mod tests {
         assert_relative_eq!(*result.longitude, -72.02916666666667);
         assert_eq!(result.symbol_table, '/');
         assert_eq!(result.symbol_code, '-');
-        assert_eq!(result.comment, "");
+        assert_eq!(result.ogn, PositionComment::default());
     }
 
     #[test]
@@ -122,7 +133,7 @@ mod tests {
         assert_relative_eq!(*result.longitude, -72.02916666666667);
         assert_eq!(result.symbol_table, '/');
         assert_eq!(result.symbol_code, '-');
-        assert_eq!(result.comment, "Hello/A=001000");
+        assert_eq!(result.ogn.unparsed.unwrap(), "Hello/A=001000");
     }
 
     #[test]
@@ -136,7 +147,9 @@ mod tests {
         assert_relative_eq!(*result.longitude, 12.408166666666666);
         assert_eq!(result.symbol_table, '\\');
         assert_eq!(result.symbol_code, '^');
-        assert_eq!(result.comment, "322/103/A=003054");
+        assert_eq!(result.ogn.altitude.unwrap(), 003054);
+        assert_eq!(result.ogn.course.unwrap(), 322);
+        assert_eq!(result.ogn.speed.unwrap(), 103);
     }
 
     #[test]
@@ -148,7 +161,7 @@ mod tests {
         assert_relative_eq!(*result.longitude, -72.02916666666667);
         assert_eq!(result.symbol_table, '/');
         assert_eq!(result.symbol_code, '-');
-        assert_eq!(result.comment, "");
+        assert_eq!(result.ogn, PositionComment::default());
     }
 
     #[test]
@@ -162,7 +175,9 @@ mod tests {
         assert_relative_eq!(*result.longitude, 12.408166666666666);
         assert_eq!(result.symbol_table, '\\');
         assert_eq!(result.symbol_code, '^');
-        assert_eq!(result.comment, "322/103/A=003054");
+        assert_eq!(result.ogn.altitude.unwrap(), 003054);
+        assert_eq!(result.ogn.course.unwrap(), 322);
+        assert_eq!(result.ogn.speed.unwrap(), 103);
     }
 
     #[test]

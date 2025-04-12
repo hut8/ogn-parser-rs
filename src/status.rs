@@ -14,11 +14,12 @@ use serde::Serialize;
 
 use crate::AprsError;
 use crate::Timestamp;
+use crate::status_comment::StatusComment;
 
 #[derive(PartialEq, Debug, Clone, Serialize)]
 pub struct AprsStatus {
     pub timestamp: Option<Timestamp>,
-    pub comment: String,
+    pub ogn: StatusComment,
 }
 
 impl FromStr for AprsStatus {
@@ -36,7 +37,7 @@ impl FromStr for AprsStatus {
 
         Ok(AprsStatus {
             timestamp,
-            comment: comment.to_owned(),
+            ogn: comment.parse::<StatusComment>().unwrap(),
         })
     }
 }
@@ -48,7 +49,7 @@ impl Display for AprsStatus {
         if let Some(ts) = &self.timestamp {
             write!(f, "{}", ts)?;
         }
-        write!(f, "{}", self.comment)?;
+        write!(f, "{:#?}", self.ogn)?;
 
         Ok(())
     }
@@ -65,28 +66,28 @@ mod tests {
     fn parse_without_timestamp_or_comment() {
         let result = "".parse::<AprsStatus>().unwrap();
         assert_eq!(result.timestamp, None);
-        assert_eq!(result.comment, "");
+        assert_eq!(result.ogn, StatusComment::default());
     }
 
     #[test]
     fn parse_with_timestamp_without_comment() {
         let result = "312359z".parse::<AprsStatus>().unwrap();
         assert_eq!(result.timestamp, Some(Timestamp::DDHHMM(31, 23, 59)));
-        assert_eq!(result.comment, "");
+        assert_eq!(result.ogn, StatusComment::default());
     }
 
     #[test]
     fn parse_without_timestamp_with_comment() {
         let result = "Hi there!".parse::<AprsStatus>().unwrap();
         assert_eq!(result.timestamp, None);
-        assert_eq!(result.comment, "Hi there!");
+        assert_eq!(result.ogn.unparsed.unwrap(), "Hi there!");
     }
 
     #[test]
     fn parse_with_timestamp_and_comment() {
         let result = "235959hHi there!".parse::<AprsStatus>().unwrap();
         assert_eq!(result.timestamp, Some(Timestamp::HHMMSS(23, 59, 59)));
-        assert_eq!(result.comment, "Hi there!");
+        assert_eq!(result.ogn.unparsed.unwrap(), "Hi there!");
     }
 
     #[test]
