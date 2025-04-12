@@ -19,22 +19,39 @@ pub struct ID {
 
 #[derive(Debug, PartialEq, Default, Clone, Serialize)]
 pub struct PositionComment {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub course: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub speed: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub altitude: Option<u32>,
+    #[serde(skip_serializing)]
     pub additional_precision: Option<AdditionalPrecision>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<ID>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub climb_rate: Option<i16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub turn_rate: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub signal_quality: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub frequency_offset: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub gps_quality: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub flight_level: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub signal_power: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub software_version: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub hardware_version: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub original_address: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub unparsed: Option<String>,
 }
 

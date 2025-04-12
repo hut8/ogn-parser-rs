@@ -5,27 +5,49 @@ use crate::utils::{extract_values, split_value_unit};
 
 #[derive(Debug, PartialEq, Default, Clone, Serialize)]
 pub struct StatusComment {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub platform: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cpu_load: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub ram_free: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub ram_total: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub ntp_offset: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub ntp_correction: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub voltage: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub amperage: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cpu_temperature: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub visible_senders: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub latency: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub senders: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub rf_correction_manual: Option<i16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub rf_correction_automatic: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub noise: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub senders_signal_quality: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub senders_messages: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub good_senders_signal_quality: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub good_senders: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub good_and_bad_senders: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub unparsed: Option<String>,
 }
 

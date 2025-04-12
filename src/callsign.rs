@@ -8,6 +8,7 @@ use crate::AprsError;
 #[derive(Eq, PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct Callsign {
     pub call: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub ssid: Option<u8>,
 }
 
