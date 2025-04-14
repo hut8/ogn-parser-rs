@@ -8,9 +8,11 @@ pub struct AdditionalPrecision {
     pub lon: u8,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Default, Clone, Serialize)]
 pub struct ID {
-    pub address_type: u8,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reserved: Option<u16>,
+    pub address_type: u16,
     pub aircraft_type: u8,
     pub is_stealth: bool,
     pub is_notrack: bool,
@@ -118,10 +120,10 @@ impl FromStr for PositionComment {
                     }
                     _ => unparsed.push(part),
                 }
-            // idXXYYYYYY is for the ID
+            // idXXYYYYYY is for the ID (4 bytes format)
             // YYYYYY: 24 bit address in hex digits
             // XX in hex digits encodes stealth mode, no-tracking flag and address type
-            // XX to binary-> STttttaa
+            // XX to binary-> STtt ttaa
             // S: stealth flag
             // T: no-tracking flag
             // tttt: aircraft type
@@ -131,11 +133,43 @@ impl FromStr for PositionComment {
                     u8::from_str_radix(&part[2..4], 16).ok(),
                     u32::from_str_radix(&part[4..10], 16).ok(),
                 ) {
-                    let address_type = detail & 0b0000_0011;
-                    let aircraft_type = (detail & 0b0011_1100) >> 2;
+                    let address_type = (detail & 0b0000_0011) as u16;
+                    let aircraft_type = (detail & 0b_0011_1100) >> 2;
                     let is_notrack = (detail & 0b0100_0000) != 0;
                     let is_stealth = (detail & 0b1000_0000) != 0;
                     position_comment.id = Some(ID {
+                        address_type,
+                        aircraft_type,
+                        is_notrack,
+                        is_stealth,
+                        address,
+                        ..Default::default()
+                    });
+                } else {
+                    unparsed.push(part);
+                }
+            // NAVITER Id format (5 bytes)
+            // idXXXXYYYYYY is for the ID
+            // YYYYYY: 24 bit address in hex digits
+            // XXXX in hex digits encodes stealth mode, no-tracking flag and address type
+            // XXXX to binary-> STtt ttaa aaaa rrrr
+            // S: stealth flag
+            // T: no-tracking flag
+            // tttt: aircraft type
+            // aaaaaa: address type
+            // rrrr: (reserved)
+            } else if part.len() == 12 && &part[0..2] == "id" && position_comment.id.is_none() {
+                if let (Some(detail), Some(address)) = (
+                    u16::from_str_radix(&part[2..6], 16).ok(),
+                    u32::from_str_radix(&part[6..12], 16).ok(),
+                ) {
+                    let reserved = detail & 0b0000_0000_0000_1111;
+                    let address_type = (detail & 0b0000_0011_1111_0000) >> 4;
+                    let aircraft_type = ((detail & 0b0011_1100_0000_0000) >> 10) as u8;
+                    let is_notrack = (detail & 0b0100_0000_0000_0000) != 0;
+                    let is_stealth = (detail & 0b1000_0000_0000_0000) != 0;
+                    position_comment.id = Some(ID {
+                        reserved: Some(reserved),
                         address_type,
                         aircraft_type,
                         is_notrack,
@@ -246,11 +280,12 @@ fn test_flr() {
             altitude: Some(3399),
             additional_precision: Some(AdditionalPrecision { lat: 0, lon: 3 }),
             id: Some(ID {
+                reserved: None,
                 address_type: 2,
                 aircraft_type: 1,
                 is_stealth: false,
                 is_notrack: false,
-                address: u32::from_str_radix("DDFAA3", 16).unwrap()
+                address: u32::from_str_radix("DDFAA3", 16).unwrap(),
             }),
             climb_rate: Some(-613),
             turn_rate: Some(-3.9),
@@ -284,7 +319,8 @@ fn test_trk() {
                 aircraft_type: 5,
                 is_stealth: false,
                 is_notrack: false,
-                address: u32::from_str_radix("B50BBB", 16).unwrap()
+                address: u32::from_str_radix("B50BBB", 16).unwrap(),
+                ..Default::default()
             }),
             climb_rate: Some(4237),
             turn_rate: Some(2.2),
@@ -317,7 +353,8 @@ fn test_trk2() {
                 aircraft_type: 1,
                 is_stealth: false,
                 is_notrack: false,
-                address: u32::from_str_radix("395004", 16).unwrap()
+                address: u32::from_str_radix("395004", 16).unwrap(),
+                ..Default::default()
             }),
             climb_rate: Some(0),
             turn_rate: Some(0.0),
@@ -347,7 +384,8 @@ fn test_trk2_different_order() {
                 aircraft_type: 1,
                 is_stealth: false,
                 is_notrack: false,
-                address: u32::from_str_radix("395004", 16).unwrap()
+                address: u32::from_str_radix("395004", 16).unwrap(),
+                ..Default::default()
             }),
             climb_rate: Some(0),
             turn_rate: Some(0.0),
@@ -369,4 +407,20 @@ fn test_bad_gps() {
     assert_eq!(result.frequency_offset, Some(-6.1));
     assert_eq!(result.gps_quality.is_some(), false);
     assert_eq!(result.unparsed, Some("gps2xFLRD0".to_string()));
+}
+
+#[test]
+fn test_naviter_id() {
+    let result = "000/000/A=000000 !W0! id985F579BDF"
+        .parse::<PositionComment>()
+        .unwrap();
+    assert_eq!(result.id.is_some(), true);
+    let id = result.id.unwrap();
+
+    assert_eq!(id.reserved, Some(15));
+    assert_eq!(id.address_type, 5);
+    assert_eq!(id.aircraft_type, 6);
+    assert_eq!(id.is_stealth, true);
+    assert_eq!(id.is_notrack, false);
+    assert_eq!(id.address, 0x579BDF);
 }

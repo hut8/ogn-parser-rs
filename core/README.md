@@ -18,46 +18,108 @@ extern crate aprs_parser;
 
 fn main() {
     let result = aprs_parser::parse(
-        r"ICA3D17F2>APRS,qAS,dl4mea:/074849h4821.61N\01224.49E^322/103/A=003054"
+        r"ICA3D1C35>OGFLR,qAS,Padova:/094220h4552.41N/01202.28E'110/099/A=003982 !W96! id053D1C35 -1187fpm +0.0rot 0.8dB 2e +4.5kHz gps1x2 s6.09 h32 rDD09D0"
     );
 
     println!("{:#?}", result);
 
-    // Ok(
-    //     APRSMessage {
+    //  Ok(
+    //     AprsPacket {
     //         from: Callsign {
-    //             call: "ICA3D17F2",
-    //             ssid: None
+    //             call: "ICA3D1C35",
+    //             ssid: None,
     //         },
     //         to: Callsign {
-    //             call: "APRS",
-    //             ssid: None
+    //             call: "OGFLR",
+    //             ssid: None,
     //         },
     //         via: [
     //             Callsign {
     //                 call: "qAS",
-    //                 ssid: None
+    //                 ssid: None,
     //             },
     //             Callsign {
-    //                 call: "dl4mea",
-    //                 ssid: None
-    //             }
+    //                 call: "Padova",
+    //                 ssid: None,
+    //             },
     //         ],
     //         data: Position(
-    //             APRSPosition {
+    //             AprsPosition {
     //                 timestamp: Some(
     //                     HHMMSS(
-    //                         7,
-    //                         48,
-    //                         49
-    //                     )
+    //                         9,
+    //                         42,
+    //                         20,
+    //                     ),
     //                 ),
-    //                 latitude: 48.360165,
-    //                 longitude: 12.408166666666666,
-    //                 comment: "322/103/A=003054"
-    //             }
-    //         )
-    //     }
+    //                 messaging_supported: false,
+    //                 latitude: Latitude(
+    //                     45.87365,
+    //                 ),
+    //                 longitude: Longitude(
+    //                     12.0381,
+    //                 ),
+    //                 symbol_table: '/',
+    //                 symbol_code: '\'',
+    //                 comment: PositionComment {
+    //                     course: Some(
+    //                         110,
+    //                     ),
+    //                     speed: Some(
+    //                         99,
+    //                     ),
+    //                     altitude: Some(
+    //                         3982,
+    //                     ),
+    //                     additional_precision: Some(
+    //                         AdditionalPrecision {
+    //                             lat: 9,
+    //                             lon: 6,
+    //                         },
+    //                     ),
+    //                     id: Some(
+    //                         ID {
+    //                             address_type: 1,
+    //                             aircraft_type: 1,
+    //                             is_stealth: false,
+    //                             is_notrack: false,
+    //                             address: 4004917,
+    //                         },
+    //                     ),
+    //                     climb_rate: Some(
+    //                         -1187,
+    //                     ),
+    //                     turn_rate: Some(
+    //                         0.0,
+    //                     ),
+    //                     signal_quality: Some(
+    //                         0.8,
+    //                     ),
+    //                     error: Some(
+    //                         2,
+    //                     ),
+    //                     frequency_offset: Some(
+    //                         4.5,
+    //                     ),
+    //                     gps_quality: Some(
+    //                         "1x2",
+    //                     ),
+    //                     flight_level: None,
+    //                     signal_power: None,
+    //                     software_version: Some(
+    //                         6.09,
+    //                     ),
+    //                     hardware_version: Some(
+    //                         50,
+    //                     ),
+    //                     original_address: Some(
+    //                         14485968,
+    //                     ),
+    //                     unparsed: None,
+    //                 },
+    //             },
+    //         ),
+    //     },
     // )
 }
 ```

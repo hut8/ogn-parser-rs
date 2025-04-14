@@ -1,6 +1,8 @@
 use std::fmt::Write;
 use std::str::FromStr;
 
+use serde::Serialize;
+
 use crate::AprsError;
 use crate::AprsMessage;
 use crate::AprsPosition;
@@ -8,7 +10,7 @@ use crate::AprsStatus;
 use crate::Callsign;
 use crate::EncodeError;
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Serialize)]
 pub struct AprsPacket {
     pub from: Callsign,
     pub to: Callsign,
@@ -72,7 +74,7 @@ impl AprsPacket {
     }
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Serialize)]
 pub enum AprsData {
     Position(AprsPosition),
     Message(AprsMessage),
@@ -187,7 +189,7 @@ mod tests {
         match result.data {
             AprsData::Status(msg) => {
                 assert_eq!(msg.timestamp, Some(Timestamp::DDHHMM(31, 23, 59)));
-                assert_eq!(msg.ogn.unparsed.unwrap(), "Status seems okay!");
+                assert_eq!(msg.comment.unparsed.unwrap(), "Status seems okay!");
             }
             _ => panic!("Unexpected data type"),
         }

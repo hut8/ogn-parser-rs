@@ -17,7 +17,7 @@ pub struct AprsPosition {
     pub longitude: Longitude,
     pub symbol_table: char,
     pub symbol_code: char,
-    pub ogn: PositionComment,
+    pub comment: PositionComment,
 }
 
 impl FromStr for AprsPosition {
@@ -54,15 +54,14 @@ impl FromStr for AprsPosition {
 
         let comment = &s[19..s.len()];
 
+        // parse the comment
         let ogn = comment.parse::<PositionComment>().unwrap();
-        *latitude += ogn
-            .additional_precision
-            .as_ref()
-            .map_or(0.0, |p| p.lat as f64 / 60_000.);
-        *longitude += ogn
-            .additional_precision
-            .as_ref()
-            .map_or(0.0, |p| p.lon as f64 / 60_000.);
+
+        // The comment may contain additional position precision information that will be added to the current position
+        if let Some(precision) = &ogn.additional_precision {
+            *latitude += precision.lat as f64 / 60_000.;
+            *longitude += precision.lon as f64 / 60_000.;
+        }
 
         Ok(AprsPosition {
             timestamp,
@@ -71,7 +70,7 @@ impl FromStr for AprsPosition {
             longitude,
             symbol_table,
             symbol_code,
-            ogn,
+            comment: ogn,
         })
     }
 }
@@ -98,7 +97,7 @@ impl AprsPosition {
             self.symbol_table,
             encode_longitude(self.longitude)?,
             self.symbol_code,
-            self.ogn,
+            self.comment,
         )?;
 
         Ok(())
@@ -120,7 +119,7 @@ mod tests {
         assert_relative_eq!(*result.longitude, -72.02916666666667);
         assert_eq!(result.symbol_table, '/');
         assert_eq!(result.symbol_code, '-');
-        assert_eq!(result.ogn, PositionComment::default());
+        assert_eq!(result.comment, PositionComment::default());
     }
 
     #[test]
@@ -133,7 +132,7 @@ mod tests {
         assert_relative_eq!(*result.longitude, -72.02916666666667);
         assert_eq!(result.symbol_table, '/');
         assert_eq!(result.symbol_code, '-');
-        assert_eq!(result.ogn.unparsed.unwrap(), "Hello/A=001000");
+        assert_eq!(result.comment.unparsed.unwrap(), "Hello/A=001000");
     }
 
     #[test]
@@ -147,9 +146,9 @@ mod tests {
         assert_relative_eq!(*result.longitude, 12.408166666666666);
         assert_eq!(result.symbol_table, '\\');
         assert_eq!(result.symbol_code, '^');
-        assert_eq!(result.ogn.altitude.unwrap(), 003054);
-        assert_eq!(result.ogn.course.unwrap(), 322);
-        assert_eq!(result.ogn.speed.unwrap(), 103);
+        assert_eq!(result.comment.altitude.unwrap(), 003054);
+        assert_eq!(result.comment.course.unwrap(), 322);
+        assert_eq!(result.comment.speed.unwrap(), 103);
     }
 
     #[test]
@@ -161,7 +160,7 @@ mod tests {
         assert_relative_eq!(*result.longitude, -72.02916666666667);
         assert_eq!(result.symbol_table, '/');
         assert_eq!(result.symbol_code, '-');
-        assert_eq!(result.ogn, PositionComment::default());
+        assert_eq!(result.comment, PositionComment::default());
     }
 
     #[test]
@@ -175,9 +174,9 @@ mod tests {
         assert_relative_eq!(*result.longitude, 12.408166666666666);
         assert_eq!(result.symbol_table, '\\');
         assert_eq!(result.symbol_code, '^');
-        assert_eq!(result.ogn.altitude.unwrap(), 003054);
-        assert_eq!(result.ogn.course.unwrap(), 322);
-        assert_eq!(result.ogn.speed.unwrap(), 103);
+        assert_eq!(result.comment.altitude.unwrap(), 003054);
+        assert_eq!(result.comment.course.unwrap(), 322);
+        assert_eq!(result.comment.speed.unwrap(), 103);
     }
 
     #[ignore = "position_comment serialization not implemented"]

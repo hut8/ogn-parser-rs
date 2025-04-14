@@ -59,6 +59,8 @@ impl FromStr for StatusComment {
         };
         let mut unparsed: Vec<_> = vec![];
         for part in s.split_whitespace() {
+            // receiver software version: vX.Y.Z
+            // X (major), Y (minor) and Z (bugfix) are integers
             if &part[0..1] == "v"
                 && part.matches('.').count() == 3
                 && status_comment.version.is_none()
@@ -70,6 +72,9 @@ impl FromStr for StatusComment {
                     .unwrap();
                 status_comment.version = Some(first[1..].into());
                 status_comment.platform = Some(second[1..].into());
+
+            // cpu load [%]: CPU:x.x
+            // x.x is a float
             } else if part.len() > 4
                 && part.starts_with("CPU:")
                 && status_comment.cpu_load.is_none()
@@ -79,6 +84,9 @@ impl FromStr for StatusComment {
                 } else {
                     unparsed.push(part);
                 }
+
+            // free and total RAM [MB]: RAM:x.x/y.yMB
+            // where x.x and y.y are floats
             } else if part.len() > 6
                 && part.starts_with("RAM:")
                 && part.ends_with("MB")
@@ -96,6 +104,9 @@ impl FromStr for StatusComment {
                 } else {
                     unparsed.push(part);
                 }
+
+            // NTP offset [ms] and NPT correction [ppm]: NTP:x.xms/y.yppm
+            // where x.x and y.y are floats
             } else if part.len() > 6
                 && part.starts_with("NTP:")
                 && part.find('/').is_some()
@@ -112,6 +123,9 @@ impl FromStr for StatusComment {
                 } else {
                     unparsed.push(part);
                 }
+
+            // visible and total senders: x/yAcfts[1h]
+            // where x and y are integers
             } else if part.len() >= 11
                 && part.ends_with("Acfts[1h]")
                 && part.find('/').is_some()
@@ -128,6 +142,9 @@ impl FromStr for StatusComment {
                 } else {
                     unparsed.push(part);
                 }
+
+            // latency [s]: Lat:x.xs
+            // where x.x is a float
             } else if part.len() > 5
                 && part.starts_with("Lat:")
                 && part.ends_with("s")
@@ -139,12 +156,14 @@ impl FromStr for StatusComment {
                 } else {
                     unparsed.push(part);
                 }
+
+            // radio frequency informations: RF:x.xppm/y.ydB/+z.zdB@10km[x]/+y.ydB@10km[x/y]
+            // where x.x, y.y and z.z are floats and x and y are integers
             } else if part.len() >= 11
                 && part.starts_with("RF:")
                 && status_comment.rf_correction_manual.is_none()
             {
                 let values = extract_values(part);
-
                 if values.len() == 3 {
                     let rf_correction_manual = values[0].parse::<i16>().ok();
                     let rf_correction_automatic = values[1].parse::<f32>().ok();
@@ -217,10 +236,13 @@ impl FromStr for StatusComment {
                     continue;
                 }
             } else if let Some((value, unit)) = split_value_unit(part) {
+                // cpu temperature [°C] is indicated as "+x.xC" where x.x is a float
                 if unit == "C" && status_comment.cpu_temperature.is_none() {
                     status_comment.cpu_temperature = value.parse::<f32>().ok();
+                // voltage [V] is indicated as "+x.xV" where x.x is a float
                 } else if unit == "V" && status_comment.voltage.is_none() {
                     status_comment.voltage = value.parse::<f32>().ok();
+                // voltage [A] is indicated as "+x.xA" where x.x is a float
                 } else if unit == "A" && status_comment.amperage.is_none() {
                     status_comment.amperage = value.parse::<f32>().ok();
                 } else {
