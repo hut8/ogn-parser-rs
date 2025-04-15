@@ -120,7 +120,7 @@ impl FromStr for PositionComment {
                     }
                     _ => unparsed.push(part),
                 }
-            // idXXYYYYYY is for the ID (4 bytes format)
+            // generic ID format: idXXYYYYYY (4 bytes format)
             // YYYYYY: 24 bit address in hex digits
             // XX in hex digits encodes stealth mode, no-tracking flag and address type
             // XX to binary-> STtt ttaa
@@ -148,8 +148,7 @@ impl FromStr for PositionComment {
                 } else {
                     unparsed.push(part);
                 }
-            // NAVITER Id format (5 bytes)
-            // idXXXXYYYYYY is for the ID
+            // NAVITER ID format: idXXXXYYYYYY (5 bytes)
             // YYYYYY: 24 bit address in hex digits
             // XXXX in hex digits encodes stealth mode, no-tracking flag and address type
             // XXXX to binary-> STtt ttaa aaaa rrrr
