@@ -1,9 +1,9 @@
-name: CI
+name: CI (core)
 
 on:
   push:
     branches:
-      - main
+      - master
       - clean
   pull_request:
 
