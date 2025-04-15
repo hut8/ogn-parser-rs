@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - clean
   pull_request:
 
 env:

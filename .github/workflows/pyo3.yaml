@@ -9,7 +9,6 @@ on:
   push:
     branches:
       - master
-      - clean
     tags:
       - '*'
   pull_request:

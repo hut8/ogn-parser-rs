@@ -1,4 +1,4 @@
-use aprs_parser::AprsPacket;
+use ogn_parser::AprsPacket;
 use pyo3::prelude::*;
 use pythonize::pythonize;
 use rayon::prelude::*;
@@ -28,8 +28,8 @@ fn parse(py: Python, packet: &str) -> PyResult<Py<PyAny>> {
 }
 
 /// A Python module implemented in Rust.
-#[pymodule(name = "aprs_parser")]
-fn aprs_parser_python(m: &Bound<'_, PyModule>) -> PyResult<()> {
+#[pymodule(name = "ogn_parser")]
+fn python_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse_raw, m)?)?;
     m.add_function(wrap_pyfunction!(parse, m)?)?;
     Ok(())

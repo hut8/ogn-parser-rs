@@ -1,13 +1,13 @@
 [package]
-name = "aprs-parser"
+name = "ogn-parser"
 version = "0.3.0"
-authors = ["Tobias Bieniek <tobias.bieniek@gmail.com>"]
+authors = ["Tobias Bieniek <tobias.bieniek@gmail.com>", "Konstantin Gründger <konstantin.gruendger@gmail.com>"]
 edition = "2024"
-description = "APRS message parser for Rust"
+description = "OGN message parser for Rust - fork of aprs-parser-rs"
 readme = "README.md"
 keywords = ["aprs", "parser", "ogn"]
-homepage = "https://github.com/Turbo87/aprs-parser-rs/"
-repository = "https://github.com/Turbo87/aprs-parser-rs.git"
+homepage = "https://github.com/Meisterschueler/ogn-parser-rs/"
+repository = "https://github.com/Meisterschueler/ogn-parser-rs.git"
 license = "MIT/Apache-2.0"
 exclude = [".gitignore"]
 
