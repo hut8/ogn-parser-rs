@@ -1,16 +1,20 @@
-use ogn_parser::AprsPacket;
-use pyo3::prelude::*;
+use ogn_parser::{AprsData, AprsPacket};
+use pyo3::{
+    prelude::*,
+    types::{PyDict, PyList},
+};
 use pythonize::pythonize;
 use rayon::prelude::*;
 
 /// Parse an APRS packet from a string to a list of JSON strings: List[str]
 #[pyfunction]
-fn parse_raw(packet: &str) -> PyResult<Vec<String>> {
-    let aprs_strings = packet.lines().collect::<Vec<_>>();
-    let json_strings = aprs_strings
+fn parse_serde_json(s: &str) -> PyResult<Vec<String>> {
+    let lines = s.lines().collect::<Vec<_>>();
+    let json_strings = lines
         .par_iter()
-        .map(|aprs_string| {
-            serde_json::to_string(&aprs_string.parse::<AprsPacket>().unwrap()).unwrap()
+        .map(|&aprs_string| match aprs_string.parse::<AprsPacket>() {
+            Ok(packet) => serde_json::to_string(&packet).unwrap(),
+            Err(err) => serde_json::to_string(&err).unwrap(),
         })
         .collect();
     Ok(json_strings)
@@ -18,19 +22,46 @@ fn parse_raw(packet: &str) -> PyResult<Vec<String>> {
 
 /// Parse an APRS packet from a string to a Python object: List[Dict[str, Any]]
 #[pyfunction]
-fn parse(py: Python, packet: &str) -> PyResult<Py<PyAny>> {
-    let aprs_strings = packet.lines().collect::<Vec<_>>();
-    let packets = aprs_strings
+fn parse_pythonize(py: Python, s: &str) -> PyResult<Py<PyAny>> {
+    let lines = s.lines().collect::<Vec<_>>();
+    let packets = lines
+        .par_iter()
+        .map(|&aprs_string| aprs_string.parse::<AprsPacket>().unwrap())
+        .collect::<Vec<AprsPacket>>();
+    Ok(pythonize(py, &packets)?.into())
+}
+
+// Parse an APRS packet from a string to a Python dict: Dict[str, Any]
+#[pyfunction]
+fn parse_pyo3(py: Python, s: &str) -> PyResult<Py<PyList>> {
+    let lines = s.lines().collect::<Vec<_>>();
+    let packets = lines
         .par_iter()
         .map(|aprs_string| aprs_string.parse::<AprsPacket>().unwrap())
         .collect::<Vec<AprsPacket>>();
-    Ok(pythonize(py, &packets)?.into())
+    let dicts = PyList::empty(py);
+    for packet in packets {
+        let dict = PyDict::new(py);
+        dict.set_item("raw_string", s).unwrap();
+        match packet.data {
+            AprsData::Position(ref pos) => {
+                dict.set_item("latitude", *pos.latitude).unwrap();
+                dict.set_item("longitude", *pos.longitude).unwrap();
+            }
+            AprsData::Status(ref _status) => {}
+            _ => {}
+        };
+        dicts.append(dict).unwrap();
+    }
+
+    Ok(dicts.into())
 }
 
 /// A Python module implemented in Rust.
 #[pymodule(name = "ogn_parser")]
 fn python_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(parse_raw, m)?)?;
-    m.add_function(wrap_pyfunction!(parse, m)?)?;
+    m.add_function(wrap_pyfunction!(parse_serde_json, m)?)?;
+    m.add_function(wrap_pyfunction!(parse_pythonize, m)?)?;
+    m.add_function(wrap_pyfunction!(parse_pyo3, m)?)?;
     Ok(())
 }
