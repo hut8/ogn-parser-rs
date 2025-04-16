@@ -18,7 +18,9 @@ use crate::status_comment::StatusComment;
 
 #[derive(PartialEq, Debug, Clone, Serialize)]
 pub struct AprsStatus {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub timestamp: Option<Timestamp>,
+    #[serde(flatten)]
     pub comment: StatusComment,
 }
 

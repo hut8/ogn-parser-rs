@@ -15,6 +15,7 @@ pub struct AprsPacket {
     pub from: Callsign,
     pub to: Callsign,
     pub via: Vec<Callsign>,
+    #[serde(flatten)]
     pub data: AprsData,
 }
 
@@ -75,6 +76,7 @@ impl AprsPacket {
 }
 
 #[derive(PartialEq, Debug, Clone, Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum AprsData {
     Position(AprsPosition),
     Message(AprsMessage),

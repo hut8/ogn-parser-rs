@@ -30,6 +30,7 @@ pub struct PositionComment {
     #[serde(skip_serializing)]
     pub additional_precision: Option<AdditionalPrecision>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(flatten)]
     pub id: Option<ID>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub climb_rate: Option<i16>,

@@ -1,15 +1,15 @@
 use std::fmt::{Display, Formatter};
 
-use serde::Deserialize;
 use serde::Serialize;
 
 use crate::AprsError;
 use crate::FromStr;
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct AprsMessage {
     pub addressee: String,
     pub text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<u32>,
 }
 

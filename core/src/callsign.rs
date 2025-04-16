@@ -1,15 +1,25 @@
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::AprsError;
 
-#[derive(Eq, PartialEq, Debug, Clone, Serialize, Deserialize)]
+#[derive(Eq, PartialEq, Debug, Clone, Serialize)]
+#[serde(into = "String")]
 pub struct Callsign {
     pub call: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub ssid: Option<u8>,
+}
+
+impl From<Callsign> for String {
+    fn from(val: Callsign) -> Self {
+        if let Some(ssid) = val.ssid {
+            format!("{}-{}", val.call, ssid)
+        } else {
+            val.call
+        }
+    }
 }
 
 impl Callsign {

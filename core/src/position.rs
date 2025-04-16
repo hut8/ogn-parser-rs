@@ -11,12 +11,14 @@ use crate::position_comment::PositionComment;
 
 #[derive(PartialEq, Debug, Clone, Serialize)]
 pub struct AprsPosition {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub timestamp: Option<Timestamp>,
     pub messaging_supported: bool,
     pub latitude: Latitude,
     pub longitude: Longitude,
     pub symbol_table: char,
     pub symbol_code: char,
+    #[serde(flatten)]
     pub comment: PositionComment,
 }
 

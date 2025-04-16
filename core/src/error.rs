@@ -1,4 +1,6 @@
-#[derive(Debug, Eq, PartialEq, thiserror::Error)]
+use serde::Serialize;
+
+#[derive(Debug, Eq, PartialEq, thiserror::Error, Serialize)]
 pub enum AprsError {
     #[error("Empty Callsign: {0}")]
     EmptyCallsign(String),
