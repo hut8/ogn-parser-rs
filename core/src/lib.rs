@@ -85,6 +85,8 @@ pub use packet::{AprsData, AprsPacket};
 pub use position::AprsPosition;
 pub use status::AprsStatus;
 pub use timestamp::Timestamp;
+pub use position_comment::{PositionComment, AdditionalPrecision, ID};
+pub use status_comment::StatusComment;
 
 pub fn parse(s: &str) -> Result<AprsPacket, AprsError> {
     AprsPacket::from_str(s)
