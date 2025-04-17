@@ -1,5 +1,5 @@
 
-aprs-parser
+ogn-parser
 ==============================================================================
 
 [![Build Status](https://travis-ci.org/Turbo87/aprs-parser-rs.svg?branch=master)](https://travis-ci.org/Turbo87/aprs-parser-rs)
@@ -9,15 +9,17 @@ aprs-parser
 [APRS]: http://www.aprs.org/
 [Rust]: https://www.rust-lang.org/
 
+This is a fork of [aprs-parser-rs](https://github.com/Turbo87/aprs-parser-rs) v0.2.0.
+Goal of this fork is to parse [OGN flavoured APRS strings](https://github.com/svoop/ogn_client-ruby/wiki/OGN-flavoured-APRS).
 
 Usage
 ------------------------------------------------------------------------------
 
 ```rust
-extern crate aprs_parser;
+extern crate ogn_parser;
 
 fn main() {
-    let result = aprs_parser::parse(
+    let result = ogn_parser::parse(
         r"ICA3D1C35>OGFLR,qAS,Padova:/094220h4552.41N/01202.28E'110/099/A=003982 !W96! id053D1C35 -1187fpm +0.0rot 0.8dB 2e +4.5kHz gps1x2 s6.09 h32 rDD09D0"
     );
 

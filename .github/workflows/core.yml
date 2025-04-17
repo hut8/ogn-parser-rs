@@ -44,3 +44,18 @@ jobs:
       - run: rustup default ${{ matrix.rust }}
       - run: rustup component add clippy
       - run: cargo clippy -- --deny warnings
+
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: katyo/publish-crates@v2
+        with:
+          path: './core'
+          registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}

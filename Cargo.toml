@@ -4,3 +4,7 @@ members = [
     "core",
     "pyo3",
 ]
+
+[workspace.package]
+version = "0.3.2"
+license = "MIT/Apache-2.0"
