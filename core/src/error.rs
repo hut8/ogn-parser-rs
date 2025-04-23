@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-#[derive(Debug, Eq, PartialEq, thiserror::Error, Serialize)]
+#[derive(Debug, Eq, PartialEq, thiserror::Error, Serialize, Clone)]
 pub enum AprsError {
     #[error("Empty Callsign: {0}")]
     EmptyCallsign(String),
@@ -26,6 +26,9 @@ pub enum AprsError {
     InvalidMessageId(String),
     #[error("String contains non-ASCII characters: {0}")]
     InvalidCoding(String),
+
+    #[error("Invalid Server comment: {0}")]
+    InvalidServerComment(String),
 }
 
 #[derive(Debug, PartialEq, thiserror::Error)]

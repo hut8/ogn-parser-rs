@@ -1,4 +1,4 @@
-use ogn_parser::{AprsData, AprsPacket};
+use ogn_parser::{AprsData, AprsPacket, ServerResponse};
 use pyo3::{
     prelude::*,
     types::{PyDict, PyList},
@@ -12,9 +12,8 @@ fn parse_serde_json(s: &str) -> PyResult<Vec<String>> {
     let lines = s.lines().collect::<Vec<_>>();
     let json_strings = lines
         .par_iter()
-        .map(|&aprs_string| match aprs_string.parse::<AprsPacket>() {
-            Ok(packet) => serde_json::to_string(&packet).unwrap(),
-            Err(err) => serde_json::to_string(&err).unwrap(),
+        .map(|&aprs_string| {
+            serde_json::to_string(&aprs_string.parse::<ServerResponse>().unwrap()).unwrap()
         })
         .collect();
     Ok(json_strings)
@@ -26,8 +25,8 @@ fn parse_pythonize(py: Python, s: &str) -> PyResult<Py<PyAny>> {
     let lines = s.lines().collect::<Vec<_>>();
     let packets = lines
         .par_iter()
-        .map(|&aprs_string| aprs_string.parse::<AprsPacket>().unwrap())
-        .collect::<Vec<AprsPacket>>();
+        .map(|&aprs_string| aprs_string.parse::<ServerResponse>().unwrap())
+        .collect::<Vec<_>>();
     Ok(pythonize(py, &packets)?.into())
 }
 
