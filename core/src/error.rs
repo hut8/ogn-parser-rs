@@ -29,6 +29,9 @@ pub enum AprsError {
 
     #[error("Invalid Server comment: {0}")]
     InvalidServerComment(String),
+
+    #[error("Timestamp out of range: {0}")]
+    TimestampOutOfRange(String),
 }
 
 #[derive(Debug, PartialEq, thiserror::Error)]

@@ -1,3 +1,4 @@
+use chrono::{Duration, prelude::*};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -62,6 +63,46 @@ impl Serialize for Timestamp {
     }
 }
 
+impl Timestamp {
+    pub fn to_datetime(&self, reference: DateTime<Utc>) -> Result<DateTime<Utc>, AprsError> {
+        match self {
+            Timestamp::HHMMSS(h, m, s) => {
+                let time = NaiveTime::from_hms_opt(*h as u32, *m as u32, *s as u32).unwrap();
+                let base_date = reference.date_naive();
+                let naive = NaiveDateTime::new(base_date, time);
+                let datetime: DateTime<Utc> = Utc.from_utc_datetime(&naive);
+
+                match (datetime - reference).num_hours() {
+                    -25..=-23 => Ok(datetime + Duration::days(1)),
+                    -1..=1 => Ok(datetime),
+                    23..=25 => Ok(datetime - Duration::days(1)),
+                    _ => Err(AprsError::TimestampOutOfRange(format!(
+                        "{datetime} {reference}"
+                    ))),
+                }
+            }
+            Timestamp::DDHHMM(d, h, m) => {
+                let time = NaiveTime::from_hms_opt(*h as u32, *m as u32, 0).unwrap();
+                let base_date = reference.date_naive();
+                let naive = NaiveDate::from_ymd_opt(base_date.year(), *d as u32, 1)
+                    .unwrap()
+                    .and_time(time);
+                let datetime: DateTime<Utc> = Utc.from_utc_datetime(&naive);
+
+                match (datetime - reference).num_hours() {
+                    -25..=-23 => Ok(datetime + Duration::days(1)),
+                    -1..=1 => Ok(datetime),
+                    23..=25 => Ok(datetime - Duration::days(1)),
+                    _ => Err(AprsError::TimestampOutOfRange("WTF".to_owned())),
+                }
+            }
+            Timestamp::Unsupported(s) => {
+                todo!()
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use csv::WriterBuilder;
@@ -109,5 +150,36 @@ mod tests {
         let mut wtr = WriterBuilder::new().from_writer(stdout());
         wtr.serialize(timestamp).unwrap();
         wtr.flush().unwrap();
+    }
+
+    #[test]
+    fn test_hhmmss_within_1h() {
+        let reference = Utc.with_ymd_and_hms(2025, 4, 25, 23, 55, 0).unwrap();
+        let timestamp = Timestamp::HHMMSS(23, 50, 0);
+        let target = Utc.with_ymd_and_hms(2025, 4, 25, 23, 50, 0).unwrap();
+        assert_eq!(timestamp.to_datetime(reference).unwrap(), target);
+    }
+
+    #[test]
+    fn test_hhmmss_within_1h_yesterday() {
+        let reference = Utc.with_ymd_and_hms(2025, 4, 25, 23, 55, 0).unwrap();
+        let timestamp = Timestamp::HHMMSS(0, 5, 20);
+        let target = Utc.with_ymd_and_hms(2025, 4, 26, 0, 5, 20).unwrap();
+        assert_eq!(timestamp.to_datetime(reference).unwrap(), target);
+    }
+
+    #[test]
+    fn test_hhmmss_within_1h_tomorrow() {
+        let reference = Utc.with_ymd_and_hms(2025, 4, 25, 0, 10, 0).unwrap();
+        let timestamp = Timestamp::HHMMSS(23, 49, 20);
+        let target = Utc.with_ymd_and_hms(2025, 4, 24, 23, 49, 20).unwrap();
+        assert_eq!(timestamp.to_datetime(reference).unwrap(), target);
+    }
+
+    #[test]
+    fn test_hhmmss_bad_time_range() {
+        let reference = Utc.with_ymd_and_hms(2025, 4, 25, 12, 10, 0).unwrap();
+        let timestamp = Timestamp::HHMMSS(23, 49, 20);
+        assert!(timestamp.to_datetime(reference).is_err());
     }
 }
