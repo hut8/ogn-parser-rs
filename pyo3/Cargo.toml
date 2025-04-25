@@ -12,7 +12,7 @@ name = "ogn_parser"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = "0.24.1"
+pyo3 = { version= "0.24.2", features = ["chrono"] }
 rayon = "1.10.0"
 serde_json = "1.0"
 ogn-parser = { path = "../core", version = "0.3.1" }

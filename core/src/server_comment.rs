@@ -1,16 +1,15 @@
 use std::net::IpAddr;
 use std::str::FromStr;
 
+use chrono::prelude::*;
 use serde::Serialize;
-use time::OffsetDateTime;
-use time::format_description::well_known::Rfc2822;
 
 use crate::AprsError;
 
 #[derive(PartialEq, Debug, Clone, Serialize)]
 pub struct ServerComment {
     pub version: String,
-    pub timestamp: OffsetDateTime,
+    pub timestamp: DateTime<Utc>,
     pub server: String,
     pub ip_address: IpAddr,
     pub port: u16,
@@ -34,8 +33,9 @@ impl FromStr for ServerComment {
 
         // Parse the timestamp
         let timestamp_str = parts.by_ref().take(5).collect::<Vec<_>>().join(" ");
-        let timestamp = OffsetDateTime::parse(&timestamp_str, &Rfc2822)
-            .map_err(|_| AprsError::InvalidServerComment(s.to_string()))?;
+        let timestamp = DateTime::parse_from_rfc2822(&timestamp_str)
+            .map_err(|_| AprsError::InvalidServerComment(s.to_string()))?
+            .with_timezone(&Utc);
 
         // Get the server name
         let server = parts
@@ -68,8 +68,6 @@ impl FromStr for ServerComment {
 
 #[cfg(test)]
 mod tests {
-    use time::macros::datetime;
-
     use super::*;
     use std::net::{IpAddr, Ipv4Addr};
 
@@ -80,7 +78,10 @@ mod tests {
         let result = raw_message.parse::<ServerComment>().unwrap();
 
         assert_eq!(result.version, "2.1.4-g408ed49");
-        assert_eq!(result.timestamp, datetime!(2018-03-17 09:30:36 UTC));
+        assert_eq!(
+            result.timestamp.to_string(),
+            "2018-03-17 09:30:36 UTC".to_string()
+        );
         assert_eq!(result.server, "GLIDERN1");
         assert_eq!(
             result.ip_address,
