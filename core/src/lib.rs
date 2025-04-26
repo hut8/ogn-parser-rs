@@ -70,6 +70,8 @@ mod message;
 mod packet;
 mod position;
 mod position_comment;
+mod server_comment;
+mod server_response;
 mod status;
 mod status_comment;
 mod timestamp;
@@ -83,10 +85,12 @@ pub use lonlat::{Latitude, Longitude};
 pub use message::AprsMessage;
 pub use packet::{AprsData, AprsPacket};
 pub use position::AprsPosition;
+pub use position_comment::{AdditionalPrecision, ID, PositionComment};
+pub use server_comment::ServerComment;
+pub use server_response::ServerResponse;
 pub use status::AprsStatus;
-pub use timestamp::Timestamp;
-pub use position_comment::{PositionComment, AdditionalPrecision, ID};
 pub use status_comment::StatusComment;
+pub use timestamp::Timestamp;
 
 pub fn parse(s: &str) -> Result<AprsPacket, AprsError> {
     AprsPacket::from_str(s)
