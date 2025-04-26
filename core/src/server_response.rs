@@ -6,6 +6,7 @@ use crate::AprsError;
 use crate::AprsPacket;
 use crate::ServerComment;
 
+#[allow(clippy::large_enum_variant)]
 #[derive(PartialEq, Debug, Clone, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ServerResponse {

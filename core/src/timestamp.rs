@@ -81,7 +81,7 @@ impl Timestamp {
                     ))),
                 }
             }
-            Timestamp::DDHHMM(d, h, m) => {
+            Timestamp::DDHHMM(_d, h, m) => {
                 // FIXME: d is currently not considered. We always use the day of reference
                 let time = NaiveTime::from_hms_opt(*h as u32, *m as u32, 0).unwrap();
                 let base_date = reference.date_naive();
@@ -97,7 +97,7 @@ impl Timestamp {
                     ))),
                 }
             }
-            Timestamp::Unsupported(s) => {
+            Timestamp::Unsupported(_s) => {
                 todo!()
             }
         }
