@@ -64,7 +64,7 @@ impl Serialize for Timestamp {
 }
 
 impl Timestamp {
-    pub fn to_datetime(&self, reference: DateTime<Utc>) -> Result<DateTime<Utc>, AprsError> {
+    pub fn to_datetime(&self, reference: &DateTime<Utc>) -> Result<DateTime<Utc>, AprsError> {
         match self {
             Timestamp::HHMMSS(h, m, s) => {
                 let time = NaiveTime::from_hms_opt(*h as u32, *m as u32, *s as u32).unwrap();
@@ -158,7 +158,7 @@ mod tests {
         let reference = Utc.with_ymd_and_hms(2025, 4, 25, 23, 55, 7).unwrap();
         let timestamp = Timestamp::HHMMSS(23, 50, 0);
         let target = Utc.with_ymd_and_hms(2025, 4, 25, 23, 50, 0).unwrap();
-        assert_eq!(timestamp.to_datetime(reference).unwrap(), target);
+        assert_eq!(timestamp.to_datetime(&reference).unwrap(), target);
     }
 
     #[test]
@@ -166,12 +166,12 @@ mod tests {
         let reference = Utc.with_ymd_and_hms(2025, 4, 10, 23, 55, 7).unwrap();
         let timestamp = Timestamp::HHMMSS(0, 5, 20);
         let target = Utc.with_ymd_and_hms(2025, 4, 11, 0, 5, 20).unwrap();
-        assert_eq!(timestamp.to_datetime(reference).unwrap(), target);
+        assert_eq!(timestamp.to_datetime(&reference).unwrap(), target);
 
         let reference = Utc.with_ymd_and_hms(2025, 4, 10, 0, 10, 7).unwrap();
         let timestamp = Timestamp::HHMMSS(23, 49, 20);
         let target = Utc.with_ymd_and_hms(2025, 4, 9, 23, 49, 20).unwrap();
-        assert_eq!(timestamp.to_datetime(reference).unwrap(), target);
+        assert_eq!(timestamp.to_datetime(&reference).unwrap(), target);
     }
 
     #[test]
@@ -179,19 +179,19 @@ mod tests {
         let reference = Utc.with_ymd_and_hms(2025, 3, 31, 23, 55, 7).unwrap();
         let timestamp = Timestamp::HHMMSS(0, 10, 20);
         let target = Utc.with_ymd_and_hms(2025, 4, 1, 0, 10, 20).unwrap();
-        assert_eq!(timestamp.to_datetime(reference).unwrap(), target);
+        assert_eq!(timestamp.to_datetime(&reference).unwrap(), target);
 
         let reference = Utc.with_ymd_and_hms(2025, 4, 1, 0, 10, 7).unwrap();
         let timestamp = Timestamp::HHMMSS(23, 55, 20);
         let target = Utc.with_ymd_and_hms(2025, 3, 31, 23, 55, 20).unwrap();
-        assert_eq!(timestamp.to_datetime(reference).unwrap(), target);
+        assert_eq!(timestamp.to_datetime(&reference).unwrap(), target);
     }
 
     #[test]
     fn test_hhmmss_bad_time_range() {
         let reference = Utc.with_ymd_and_hms(2025, 4, 10, 12, 10, 7).unwrap();
         let timestamp = Timestamp::HHMMSS(23, 49, 20);
-        assert!(timestamp.to_datetime(reference).is_err());
+        assert!(timestamp.to_datetime(&reference).is_err());
     }
 
     #[test]
@@ -200,7 +200,7 @@ mod tests {
         let timestamp = Timestamp::DDHHMM(10, 23, 50);
         let target = Utc.with_ymd_and_hms(2025, 4, 10, 23, 50, 0).unwrap();
 
-        assert_eq!(timestamp.to_datetime(reference).unwrap(), target);
+        assert_eq!(timestamp.to_datetime(&reference).unwrap(), target);
     }
 
     #[test]
@@ -208,11 +208,11 @@ mod tests {
         let reference = Utc.with_ymd_and_hms(2025, 3, 31, 23, 55, 0).unwrap();
         let timestamp = Timestamp::DDHHMM(1, 0, 10);
         let target = Utc.with_ymd_and_hms(2025, 4, 1, 0, 10, 0).unwrap();
-        assert_eq!(timestamp.to_datetime(reference).unwrap(), target);
+        assert_eq!(timestamp.to_datetime(&reference).unwrap(), target);
 
         let reference = Utc.with_ymd_and_hms(2025, 4, 1, 0, 10, 0).unwrap();
         let timestamp = Timestamp::DDHHMM(31, 23, 55);
         let target = Utc.with_ymd_and_hms(2025, 3, 31, 23, 55, 0).unwrap();
-        assert_eq!(timestamp.to_datetime(reference).unwrap(), target);
+        assert_eq!(timestamp.to_datetime(&reference).unwrap(), target);
     }
 }

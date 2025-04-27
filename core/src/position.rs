@@ -1,6 +1,8 @@
 use std::fmt::Write;
 use std::str::FromStr;
 
+use flat_projection::FlatPoint;
+use flat_projection::FlatProjection;
 use serde::Serialize;
 
 use crate::AprsError;
@@ -20,6 +22,11 @@ pub struct AprsPosition {
     pub symbol_code: char,
     #[serde(flatten)]
     pub comment: PositionComment,
+
+    #[serde(skip_serializing)]
+    pub flat_projection: FlatProjection<f64>,
+    #[serde(skip_serializing)]
+    pub flat_point: FlatPoint<f64>,
 }
 
 impl FromStr for AprsPosition {
@@ -65,6 +72,10 @@ impl FromStr for AprsPosition {
             *longitude += precision.lon as f64 / 60_000.;
         }
 
+        // For fast distance calculations, we need to create a flat projection of the position
+        let flat_projection = FlatProjection::new(*longitude, *latitude);
+        let flat_point = flat_projection.project(*longitude, *latitude);
+
         Ok(AprsPosition {
             timestamp,
             messaging_supported,
@@ -73,6 +84,8 @@ impl FromStr for AprsPosition {
             symbol_table,
             symbol_code,
             comment: ogn,
+            flat_projection,
+            flat_point,
         })
     }
 }
