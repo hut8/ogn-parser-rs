@@ -117,6 +117,14 @@ impl AprsPosition {
 
         Ok(())
     }
+
+    pub fn get_bearing(&self, other: &Self) -> f64 {
+        self.flat_point.bearing(&other.flat_point)
+    }
+
+    pub fn get_distance(&self, other: &Self) -> f64 {
+        self.flat_point.distance(&other.flat_point)
+    }
 }
 
 #[cfg(test)]
