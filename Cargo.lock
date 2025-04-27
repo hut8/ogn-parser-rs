@@ -136,6 +136,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 
 [[package]]
+name = "flat_projection"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b4ce0e42233898c39d5784f6bb1229e97ee6cf7064a3dad2c969f27f945e32d"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "heck"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -230,6 +239,7 @@ dependencies = [
  "approx",
  "chrono",
  "csv",
+ "flat_projection",
  "regex",
  "serde",
  "thiserror",
