@@ -1,7 +1,6 @@
 use std::fmt::Write;
 use std::str::FromStr;
 
-use flat_projection::FlatPoint;
 use flat_projection::FlatProjection;
 use serde::Serialize;
 
@@ -10,6 +9,11 @@ use crate::EncodeError;
 use crate::Timestamp;
 use crate::lonlat::{Latitude, Longitude, encode_latitude, encode_longitude};
 use crate::position_comment::PositionComment;
+
+pub struct Relation {
+    pub bearing: f64,
+    pub distance: f64,
+}
 
 #[derive(PartialEq, Debug, Clone, Serialize)]
 pub struct AprsPosition {
@@ -22,11 +26,6 @@ pub struct AprsPosition {
     pub symbol_code: char,
     #[serde(flatten)]
     pub comment: PositionComment,
-
-    #[serde(skip_serializing)]
-    pub flat_projection: FlatProjection<f64>,
-    #[serde(skip_serializing)]
-    pub flat_point: FlatPoint<f64>,
 }
 
 impl FromStr for AprsPosition {
@@ -72,10 +71,6 @@ impl FromStr for AprsPosition {
             *longitude += precision.lon as f64 / 60_000.;
         }
 
-        // For fast distance calculations, we need to create a flat projection of the position
-        let flat_projection = FlatProjection::new(*longitude, *latitude);
-        let flat_point = flat_projection.project(*longitude, *latitude);
-
         Ok(AprsPosition {
             timestamp,
             messaging_supported,
@@ -84,8 +79,6 @@ impl FromStr for AprsPosition {
             symbol_table,
             symbol_code,
             comment: ogn,
-            flat_projection,
-            flat_point,
         })
     }
 }
@@ -118,12 +111,18 @@ impl AprsPosition {
         Ok(())
     }
 
-    pub fn get_bearing(&self, other: &Self) -> f64 {
-        self.flat_point.bearing(&other.flat_point)
-    }
+    pub fn get_relation(&self, other: &Self) -> Relation {
+        let mean_longitude: f64 = (*self.longitude + *other.longitude) / 2.0;
+        let mean_latitude: f64 = (*self.latitude + *other.latitude) / 2.0;
+        let flat_projection = FlatProjection::new(mean_longitude, mean_latitude);
 
-    pub fn get_distance(&self, other: &Self) -> f64 {
-        self.flat_point.distance(&other.flat_point)
+        let p1 = flat_projection.project(*self.latitude, *self.longitude);
+        let p2 = flat_projection.project(*other.latitude, *other.longitude);
+
+        Relation {
+            bearing: (450.0 - p1.bearing(&p2)) % 360.0, // convert from unit circle (0 @ east, counterclockwise) to compass rose (0 @ north, clockwise)
+            distance: p1.distance(&p2) * 1000.0,        // convert from [km] to [m]
+        }
     }
 }
 
@@ -217,5 +216,26 @@ mod tests {
     fn test_input_string_too_short() {
         let result = "/13244".parse::<AprsPosition>();
         assert!(result.is_err(), "Short input string should return an error");
+    }
+
+    #[test]
+    fn test_bearing() {
+        let receiver = r"!4903.50N/07201.75W-".parse::<AprsPosition>().unwrap();
+        let east = r"!4903.50N/07101.75W-".parse::<AprsPosition>().unwrap();
+        let north = r"!5004.50N/07201.75W-".parse::<AprsPosition>().unwrap();
+        let west = r"!4903.50N/07301.75W-".parse::<AprsPosition>().unwrap();
+        let south = r"!4803.50N/07201.75W-".parse::<AprsPosition>().unwrap();
+
+        let to_north = receiver.get_relation(&north);
+        assert_eq!(to_north.bearing, 0.0);
+
+        let to_east = receiver.get_relation(&east);
+        assert_eq!(to_east.bearing, 90.0);
+
+        let to_south = receiver.get_relation(&south);
+        assert_eq!(to_south.bearing, 180.0);
+
+        let to_west = receiver.get_relation(&west);
+        assert_eq!(to_west.bearing, 270.0);
     }
 }
