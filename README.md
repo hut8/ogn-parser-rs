@@ -2,10 +2,8 @@
 ogn-parser
 ==============================================================================
 
-![Build Status Core](https://github.com/Meisterschueler/ogn-parser-rs/actions/workflows/core.yml/badge.svg)
-![Build Status Pyo3](https://github.com/Meisterschueler/ogn-parser-rs/actions/workflows/pyo3.yml/badge.svg)
-
-
+![Build Status Core](https://github.com/Meisterschueler/ogn-parser-rs/actions/workflows/core.yaml/badge.svg)
+![Build Status Pyo3](https://github.com/Meisterschueler/ogn-parser-rs/actions/workflows/pyo3.yaml/badge.svg)
 
 License
 ------------------------------------------------------------------------------
