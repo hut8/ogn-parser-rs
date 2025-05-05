@@ -1,7 +1,7 @@
 use serde::Serialize;
 use std::{convert::Infallible, str::FromStr};
 
-use crate::utils::split_value_unit;
+use crate::utils::{split_letter_number_pairs, split_value_unit};
 #[derive(Debug, PartialEq, Eq, Default, Clone, Serialize)]
 pub struct AdditionalPrecision {
     pub lat: u8,
@@ -27,6 +27,20 @@ pub struct PositionComment {
     pub speed: Option<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub altitude: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub gust: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub temperature: Option<i16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rainfall_1h: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rainfall_24h: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rainfall_midnight: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub humidity: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub barometric_pressure: Option<u32>,
     #[serde(skip_serializing)]
     pub additional_precision: Option<AdditionalPrecision>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -70,15 +84,15 @@ impl FromStr for PositionComment {
             // ccc: course in degrees 0-360
             // sss: speed in km/h
             // aaaaaa: altitude in feet
-            if idx == 0 && part.len() == 16 && position_comment.course.is_none() {
-                let subparts = part.split('/').collect::<Vec<_>>();
-                let course = subparts[0].parse::<u16>().ok();
-                let speed = subparts[1].parse::<u16>().ok();
-                let altitude = if &subparts[2][0..2] == "A=" {
-                    subparts[2][2..].parse::<u32>().ok()
-                } else {
-                    None
-                };
+            if idx == 0
+                && part.len() == 16
+                && &part[3..4] == "/"
+                && &part[7..10] == "/A="
+                && position_comment.course.is_none()
+            {
+                let course = part[0..3].parse::<u16>().ok();
+                let speed = part[4..7].parse::<u16>().ok();
+                let altitude = part[10..16].parse::<u32>().ok();
                 if course.is_some()
                     && course.unwrap() <= 360
                     && speed.is_some()
@@ -100,6 +114,53 @@ impl FromStr for PositionComment {
                 match part[3..].parse::<u32>().ok() {
                     Some(altitude) => position_comment.altitude = Some(altitude),
                     None => unparsed.push(part),
+                }
+            // ... or a complete weather report
+            // the first character defines the type of the data, the "d" is for the digits
+            //
+            // mandatory fields:
+            // gddd: gust (peak wind speed in mph in the last 5 minutes)
+            // tddd: temperature (in degrees Fahrenheit). Temperatures below zero are expressed as -01 to -99
+            //
+            // optional fields:
+            // rddd: rainfall (in hundrets of inches) in the last hour
+            // pddd: rainfall (in hundrets of inches) in the last 24 hours
+            // Pddd: rainfall (in hundrets of inches) since midnight
+            // hdd: humidity (in % where 00 is 100%)
+            // bddddd: barometric pressure (in tenths of millibars/tenths of hPascal)
+            } else if idx == 0
+                && part.len() >= 15
+                && &part[3..4] == "/"
+                && position_comment.gust.is_none()
+            {
+                let course = part[0..3].parse::<u16>().ok();
+                let speed = part[4..7].parse::<u16>().ok();
+
+                let pairs = split_letter_number_pairs(&part[7..]);
+                if pairs.iter().any(|(c, _)| !"gtrpPhb".contains(*c)) {
+                    unparsed.push(part);
+                    continue;
+                }
+
+                if course.is_some() && speed.is_some() {
+                    position_comment.course = course;
+                    position_comment.speed = speed;
+                } else {
+                    unparsed.push(part);
+                    continue;
+                }
+
+                for (c, number) in pairs {
+                    match c {
+                        'g' => position_comment.gust = Some(number as u16),
+                        't' => position_comment.temperature = Some(number as i16),
+                        'r' => position_comment.rainfall_1h = Some(number as u16),
+                        'p' => position_comment.rainfall_24h = Some(number as u16),
+                        'P' => position_comment.rainfall_midnight = Some(number as u16),
+                        'h' => position_comment.humidity = Some(number as u8),
+                        'b' => position_comment.barometric_pressure = Some(number as u32),
+                        _ => unparsed.push(part),
+                    }
                 }
             // The second part can be the additional precision: !Wab!
             // a: additional latitude precision
@@ -313,6 +374,13 @@ fn test_trk() {
             course: Some(200),
             speed: Some(73),
             altitude: Some(126433),
+            gust: None,
+            temperature: None,
+            rainfall_1h: None,
+            rainfall_24h: None,
+            rainfall_midnight: None,
+            humidity: None,
+            barometric_pressure: None,
             additional_precision: Some(AdditionalPrecision { lat: 0, lon: 5 }),
             id: Some(ID {
                 address_type: 1,
@@ -423,4 +491,17 @@ fn test_naviter_id() {
     assert_eq!(id.is_stealth, true);
     assert_eq!(id.is_notrack, false);
     assert_eq!(id.address, 0x579BDF);
+}
+
+#[test]
+fn parse_weather() {
+    let result = "187/004g007t075h78b63620"
+        .parse::<PositionComment>()
+        .unwrap();
+    assert_eq!(result.course, Some(187));
+    assert_eq!(result.speed, Some(4));
+    assert_eq!(result.gust, Some(7));
+    assert_eq!(result.temperature, Some(75));
+    assert_eq!(result.humidity, Some(78));
+    assert_eq!(result.barometric_pressure, Some(63620));
 }

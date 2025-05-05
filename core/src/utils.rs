@@ -54,6 +54,33 @@ pub fn extract_values(part: &str) -> Vec<String> {
     result
 }
 
+pub fn split_letter_number_pairs(s: &str) -> Vec<(char, i32)> {
+    let mut result = Vec::new();
+    let mut chars = s.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        if c.is_ascii_alphabetic() {
+            let mut number_str = String::new();
+            if let Some(&next) = chars.peek() {
+                if next == '-' {
+                    number_str.push(chars.next().unwrap());
+                }
+            }
+            while let Some(&next) = chars.peek() {
+                if next.is_ascii_digit() {
+                    number_str.push(chars.next().unwrap());
+                } else {
+                    break;
+                }
+            }
+            let number = number_str.parse::<i32>().unwrap_or(0);
+            result.push((c, number));
+        }
+    }
+
+    result
+}
+
 #[test]
 fn test_extract_values() {
     assert_eq!(
@@ -71,4 +98,17 @@ fn test_split_value_unit() {
     assert_eq!(split_value_unit("-12.V"), Some(("-12.", "V")));
     assert_eq!(split_value_unit("+kVA"), None);
     assert_eq!(split_value_unit("25"), None);
+}
+
+#[test]
+fn test_split_letter_number_pairs() {
+    let input = "a523b8876B98173X3Z00F-432";
+    let parsed = split_letter_number_pairs(input);
+    assert_eq!(parsed.len(), 6);
+    assert_eq!(parsed[0], ('a', 523));
+    assert_eq!(parsed[1], ('b', 8876));
+    assert_eq!(parsed[2], ('B', 98173));
+    assert_eq!(parsed[3], ('X', 3));
+    assert_eq!(parsed[4], ('Z', 0));
+    assert_eq!(parsed[5], ('F', -432));
 }
