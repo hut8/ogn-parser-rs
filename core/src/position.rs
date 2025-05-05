@@ -66,9 +66,9 @@ impl FromStr for AprsPosition {
         let ogn = comment.parse::<PositionComment>().unwrap();
 
         // The comment may contain additional position precision information that will be added to the current position
-        if let Some(precision) = &ogn.additional_precision {
-            *latitude += precision.lat as f64 / 60_000.;
-            *longitude += precision.lon as f64 / 60_000.;
+        if let Some(additional_precision) = &ogn.additional_precision {
+            *latitude += latitude.signum() * additional_precision.lat as f64 / 60_000.;
+            *longitude += longitude.signum() * additional_precision.lon as f64 / 60_000.;
         }
 
         Ok(AprsPosition {
@@ -199,6 +199,15 @@ mod tests {
         assert_eq!(result.comment.altitude.unwrap(), 003054);
         assert_eq!(result.comment.course.unwrap(), 322);
         assert_eq!(result.comment.speed.unwrap(), 103);
+    }
+
+    #[test]
+    fn test_latitude_longitude() {
+        let result = r"/104337h5211.24N\00032.65W^124/081/A=004026 !W62!"
+            .parse::<AprsPosition>()
+            .unwrap();
+        assert_relative_eq!(*result.latitude, 52.18743333333334);
+        assert_relative_eq!(*result.longitude, -0.5442);
     }
 
     #[ignore = "position_comment serialization not implemented"]
