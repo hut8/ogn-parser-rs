@@ -28,6 +28,10 @@ pub struct PositionComment {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub altitude: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub wind_direction: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub wind_speed: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub gust: Option<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub temperature: Option<i16>,
@@ -115,8 +119,9 @@ impl FromStr for PositionComment {
                     Some(altitude) => position_comment.altitude = Some(altitude),
                     None => unparsed.push(part),
                 }
-            // ... or a complete weather report
-            // the first character defines the type of the data, the "d" is for the digits
+            // ... or a complete weather report: ccc/sss/XXX...
+            // starting ccc/sss is now wind_direction and wind_speed
+            // XXX... is a string of data pairs, where each pair has one letter that indicates the type of data and a number that indicates the value
             //
             // mandatory fields:
             // gddd: gust (peak wind speed in mph in the last 5 minutes)
@@ -131,21 +136,27 @@ impl FromStr for PositionComment {
             } else if idx == 0
                 && part.len() >= 15
                 && &part[3..4] == "/"
-                && position_comment.gust.is_none()
+                && position_comment.wind_direction.is_none()
             {
-                let course = part[0..3].parse::<u16>().ok();
-                let speed = part[4..7].parse::<u16>().ok();
+                let wind_direction = part[0..3].parse::<u16>().ok();
+                let wind_speed = part[4..7].parse::<u16>().ok();
 
-                let pairs = split_letter_number_pairs(&part[7..]);
-                if pairs.iter().any(|(c, _)| !"gtrpPhb".contains(*c)) {
+                if wind_direction.is_some() && wind_speed.is_some() {
+                    position_comment.wind_direction = wind_direction;
+                    position_comment.wind_speed = wind_speed;
+                } else {
                     unparsed.push(part);
                     continue;
                 }
 
-                if course.is_some() && speed.is_some() {
-                    position_comment.course = course;
-                    position_comment.speed = speed;
-                } else {
+                let pairs = split_letter_number_pairs(&part[7..]);
+
+                // check if any type of data is not in the allowed set or if any type is duplicated
+                let mut seen = std::collections::HashSet::new();
+                if pairs
+                    .iter()
+                    .any(|(c, _)| !seen.insert(*c) || !"gtrpPhb".contains(*c))
+                {
                     unparsed.push(part);
                     continue;
                 }
@@ -159,7 +170,7 @@ impl FromStr for PositionComment {
                         'P' => position_comment.rainfall_midnight = Some(number as u16),
                         'h' => position_comment.humidity = Some(number as u8),
                         'b' => position_comment.barometric_pressure = Some(number as u32),
-                        _ => unparsed.push(part),
+                        _ => unreachable!(),
                     }
                 }
             // The second part can be the additional precision: !Wab!
@@ -374,6 +385,8 @@ fn test_trk() {
             course: Some(200),
             speed: Some(73),
             altitude: Some(126433),
+            wind_direction: None,
+            wind_speed: None,
             gust: None,
             temperature: None,
             rainfall_1h: None,
@@ -498,10 +511,32 @@ fn parse_weather() {
     let result = "187/004g007t075h78b63620"
         .parse::<PositionComment>()
         .unwrap();
-    assert_eq!(result.course, Some(187));
-    assert_eq!(result.speed, Some(4));
+    assert_eq!(result.wind_direction, Some(187));
+    assert_eq!(result.wind_speed, Some(4));
     assert_eq!(result.gust, Some(7));
     assert_eq!(result.temperature, Some(75));
     assert_eq!(result.humidity, Some(78));
     assert_eq!(result.barometric_pressure, Some(63620));
+}
+
+#[test]
+fn parse_weather_bad_type() {
+    let result = "187/004g007X075h78b63620"
+        .parse::<PositionComment>()
+        .unwrap();
+    assert_eq!(
+        result.unparsed,
+        Some("187/004g007X075h78b63620".to_string())
+    );
+}
+
+#[test]
+fn parse_weather_duplicate_type() {
+    let result = "187/004g007t075g78b63620"
+        .parse::<PositionComment>()
+        .unwrap();
+    assert_eq!(
+        result.unparsed,
+        Some("187/004g007t075g78b63620".to_string())
+    );
 }
