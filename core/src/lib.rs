@@ -64,6 +64,7 @@ extern crate thiserror;
 extern crate approx;
 
 mod callsign;
+mod comment;
 mod error;
 mod lonlat;
 mod message;
@@ -80,6 +81,7 @@ mod utils;
 use std::str::FromStr;
 
 pub use callsign::Callsign;
+pub use comment::Comment;
 pub use error::{AprsError, EncodeError};
 pub use lonlat::{Latitude, Longitude};
 pub use message::AprsMessage;

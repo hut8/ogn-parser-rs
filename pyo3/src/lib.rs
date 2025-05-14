@@ -20,16 +20,14 @@ fn parse_to_json(s: &str) -> PyResult<Vec<String>> {
 #[pyfunction]
 fn parse(py: Python, s: &str) -> PyResult<Py<PyAny>> {
     let lines = s.lines().collect::<Vec<_>>();
-    let result = if lines.len() == 1 {
-        pythonize(py, &lines[0].parse::<ServerResponse>().unwrap())?.into()
-    } else {
-        let packets = lines
+    Ok(pythonize(
+        py,
+        &lines
             .par_iter()
             .map(|&aprs_string| aprs_string.parse::<ServerResponse>().unwrap())
-            .collect::<Vec<_>>();
-        pythonize(py, &packets)?.into()
-    };
-    Ok(result)
+            .collect::<Vec<_>>(),
+    )?
+    .into())
 }
 
 /// A Python module implemented in Rust.

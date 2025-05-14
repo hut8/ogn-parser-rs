@@ -4,14 +4,16 @@ use serde::Serialize;
 
 use crate::AprsError;
 use crate::AprsPacket;
+use crate::Comment;
 use crate::ServerComment;
 
 #[allow(clippy::large_enum_variant)]
 #[derive(PartialEq, Debug, Clone, Serialize)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
 pub enum ServerResponse {
     AprsPacket(AprsPacket),
     ServerComment(ServerComment),
+    Comment(Comment),
     ParserError(AprsError),
 }
 
@@ -22,7 +24,7 @@ impl FromStr for ServerResponse {
         if s.starts_with("#") {
             match ServerComment::from_str(s) {
                 Ok(server_comment) => Ok(ServerResponse::ServerComment(server_comment)),
-                Err(err) => Ok(ServerResponse::ParserError(err)),
+                Err(_) => Ok(ServerResponse::Comment(s.parse::<Comment>().unwrap())),
             }
         } else {
             match AprsPacket::from_str(s) {
@@ -56,6 +58,16 @@ mod tests {
             // Do nothing, we expect this to be a ServerComment
         } else {
             panic!("Expected ServerComment, got something else");
+        }
+    }
+
+    #[test]
+    fn parse_comment() {
+        let result = r"# This is a test comment".parse::<ServerResponse>();
+        if let Ok(ServerResponse::Comment(_)) = result {
+            // Do nothing, we expect this to be a Comment
+        } else {
+            panic!("Expected Comment, got something else");
         }
     }
 
