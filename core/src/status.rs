@@ -49,7 +49,7 @@ impl Display for AprsStatus {
         write!(f, ">")?;
 
         if let Some(ts) = &self.timestamp {
-            write!(f, "{}", ts)?;
+            write!(f, "{ts}")?;
         }
         write!(f, "{:#?}", self.comment)?;
 

@@ -96,7 +96,7 @@ impl Display for AprsMessage {
         write!(f, ":{: <9}:{}", self.addressee, self.text)?;
 
         if let Some(id) = self.id {
-            write!(f, "{{{}", id)?;
+            write!(f, "{{{id}")?;
         }
 
         Ok(())

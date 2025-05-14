@@ -92,10 +92,10 @@ impl AprsPosition {
             (false, false) => '!',
         };
 
-        write!(buf, "{}", sym)?;
+        write!(buf, "{sym}")?;
 
         if let Some(ts) = &self.timestamp {
-            write!(buf, "{}", ts)?;
+            write!(buf, "{ts}")?;
         }
 
         write!(

@@ -67,7 +67,7 @@ impl Display for Callsign {
         write!(f, "{}", self.call)?;
 
         if let Some(ssid) = &self.ssid {
-            write!(f, "-{}", ssid)?;
+            write!(f, "-{ssid}")?;
         }
 
         Ok(())

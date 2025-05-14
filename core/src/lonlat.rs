@@ -127,7 +127,7 @@ pub fn encode_latitude(lat: Latitude) -> Result<String, EncodeError> {
     let min = ((lat - (deg as f64)) * 60.0) as u32;
     let min_frac = ((lat - (deg as f64) - (min as f64 / 60.0)) * 6000.0).round() as u32;
 
-    Ok(format!("{:02}{:02}.{:02}{}", deg, min, min_frac, dir))
+    Ok(format!("{deg:02}{min:02}.{min_frac:02}{dir}"))
 }
 
 pub fn encode_longitude(lon: Longitude) -> Result<String, EncodeError> {
@@ -143,7 +143,7 @@ pub fn encode_longitude(lon: Longitude) -> Result<String, EncodeError> {
     let min = ((lon - (deg as f64)) * 60.0) as u32;
     let min_frac = ((lon - (deg as f64) - (min as f64 / 60.0)) * 6000.0).round() as u32;
 
-    Ok(format!("{:03}{:02}.{:02}{}", deg, min, min_frac, dir))
+    Ok(format!("{deg:03}{min:02}.{min_frac:02}{dir}"))
 }
 
 #[cfg(test)]

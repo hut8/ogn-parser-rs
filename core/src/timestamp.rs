@@ -47,9 +47,9 @@ impl FromStr for Timestamp {
 impl Display for Timestamp {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
-            Self::DDHHMM(d, h, m) => write!(f, "{:02}{:02}{:02}z", d, h, m),
-            Self::HHMMSS(h, m, s) => write!(f, "{:02}{:02}{:02}h", h, m, s),
-            Self::Unsupported(s) => write!(f, "{}", s),
+            Self::DDHHMM(d, h, m) => write!(f, "{d:02}{h:02}{m:02}z"),
+            Self::HHMMSS(h, m, s) => write!(f, "{h:02}{m:02}{s:02}h"),
+            Self::Unsupported(s) => write!(f, "{s}"),
         }
     }
 }
@@ -59,7 +59,7 @@ impl Serialize for Timestamp {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(&format!("{}", self))
+        serializer.serialize_str(&format!("{self}"))
     }
 }
 
