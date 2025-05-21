@@ -1,3 +1,4 @@
+use rust_decimal::prelude::*;
 use serde::Serialize;
 use std::{convert::Infallible, str::FromStr};
 
@@ -53,21 +54,21 @@ pub struct PositionComment {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub climb_rate: Option<i16>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub turn_rate: Option<f32>,
+    pub turn_rate: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub signal_quality: Option<f32>,
+    pub signal_quality: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub frequency_offset: Option<f32>,
+    pub frequency_offset: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub gps_quality: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub flight_level: Option<f32>,
+    pub flight_level: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub signal_power: Option<f32>,
+    pub signal_power: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub software_version: Option<f32>,
+    pub software_version: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hardware_version: Option<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -255,15 +256,19 @@ impl FromStr for PositionComment {
                 if unit == "fpm" && position_comment.climb_rate.is_none() {
                     position_comment.climb_rate = value.parse::<i16>().ok();
                 } else if unit == "rot" && position_comment.turn_rate.is_none() {
-                    position_comment.turn_rate = value.parse::<f32>().ok();
+                    position_comment.turn_rate =
+                        value.parse::<f32>().ok().and_then(Decimal::from_f32);
                 } else if unit == "dB" && position_comment.signal_quality.is_none() {
-                    position_comment.signal_quality = value.parse::<f32>().ok();
+                    position_comment.signal_quality =
+                        value.parse::<f32>().ok().and_then(Decimal::from_f32);
                 } else if unit == "kHz" && position_comment.frequency_offset.is_none() {
-                    position_comment.frequency_offset = value.parse::<f32>().ok();
+                    position_comment.frequency_offset =
+                        value.parse::<f32>().ok().and_then(Decimal::from_f32);
                 } else if unit == "e" && position_comment.error.is_none() {
                     position_comment.error = value.parse::<u8>().ok();
                 } else if unit == "dBm" && position_comment.signal_power.is_none() {
-                    position_comment.signal_power = value.parse::<f32>().ok();
+                    position_comment.signal_power =
+                        value.parse::<f32>().ok().and_then(Decimal::from_f32);
                 } else {
                     unparsed.push(part);
                 }
@@ -290,7 +295,7 @@ impl FromStr for PositionComment {
                 && position_comment.flight_level.is_none()
             {
                 if let Ok(flight_level) = part[2..].parse::<f32>() {
-                    position_comment.flight_level = Some(flight_level);
+                    position_comment.flight_level = Decimal::from_f32(flight_level);
                 } else {
                     unparsed.push(part);
                 }
@@ -301,7 +306,7 @@ impl FromStr for PositionComment {
                 && position_comment.software_version.is_none()
             {
                 if let Ok(software_version) = part[1..].parse::<f32>() {
-                    position_comment.software_version = Some(software_version);
+                    position_comment.software_version = Decimal::from_f32(software_version);
                 } else {
                     unparsed.push(part);
                 }
@@ -360,12 +365,12 @@ fn test_flr() {
                 address: u32::from_str_radix("DDFAA3", 16).unwrap(),
             }),
             climb_rate: Some(-613),
-            turn_rate: Some(-3.9),
-            signal_quality: Some(22.5),
+            turn_rate: Decimal::from_f32(-3.9),
+            signal_quality: Decimal::from_f32(22.5),
             error: Some(7),
-            frequency_offset: Some(-7.0),
+            frequency_offset: Decimal::from_f32(-7.0),
             gps_quality: Some("3x7".into()),
-            software_version: Some(7.07),
+            software_version: Decimal::from_f32(7.07),
             hardware_version: Some(65),
             original_address: u32::from_str_radix("D002F8", 16).ok(),
             ..Default::default()
@@ -404,12 +409,12 @@ fn test_trk() {
                 ..Default::default()
             }),
             climb_rate: Some(4237),
-            turn_rate: Some(2.2),
-            signal_quality: Some(10.0),
+            turn_rate: Decimal::from_f32(2.2),
+            signal_quality: Decimal::from_f32(10.0),
             error: Some(19),
-            frequency_offset: Some(23.8),
+            frequency_offset: Decimal::from_f32(23.8),
             gps_quality: Some("36x55".into()),
-            flight_level: Some(1267.81),
+            flight_level: Decimal::from_f32(1267.81),
             signal_power: None,
             software_version: None,
             hardware_version: None,
@@ -438,12 +443,12 @@ fn test_trk2() {
                 ..Default::default()
             }),
             climb_rate: Some(0),
-            turn_rate: Some(0.0),
-            signal_quality: Some(40.2),
-            frequency_offset: Some(-15.1),
+            turn_rate: Decimal::from_f32(0.0),
+            signal_quality: Decimal::from_f32(40.2),
+            frequency_offset: Decimal::from_f32(-15.1),
             gps_quality: Some("9x13".into()),
-            flight_level: Some(21.72),
-            signal_power: Some(15.8),
+            flight_level: Decimal::from_f32(21.72),
+            signal_power: Decimal::from_f32(15.8),
             ..Default::default()
         }
     );
@@ -469,12 +474,12 @@ fn test_trk2_different_order() {
                 ..Default::default()
             }),
             climb_rate: Some(0),
-            turn_rate: Some(0.0),
-            signal_quality: Some(40.2),
-            frequency_offset: Some(-15.1),
+            turn_rate: Decimal::from_f32(0.0),
+            signal_quality: Decimal::from_f32(40.2),
+            frequency_offset: Decimal::from_f32(-15.1),
             gps_quality: Some("9x13".into()),
-            flight_level: Some(21.72),
-            signal_power: Some(15.8),
+            flight_level: Decimal::from_f32(21.72),
+            signal_power: Decimal::from_f32(15.8),
             ..Default::default()
         }
     );
@@ -485,7 +490,7 @@ fn test_bad_gps() {
     let result = "208/063/A=003222 !W97! id06D017DC -395fpm -2.4rot 8.2dB -6.1kHz gps2xFLRD0"
         .parse::<PositionComment>()
         .unwrap();
-    assert_eq!(result.frequency_offset, Some(-6.1));
+    assert_eq!(result.frequency_offset, Decimal::from_f32(-6.1));
     assert_eq!(result.gps_quality.is_some(), false);
     assert_eq!(result.unparsed, Some("gps2xFLRD0".to_string()));
 }

@@ -1,3 +1,4 @@
+use rust_decimal::prelude::*;
 use serde::Serialize;
 use std::{convert::Infallible, str::FromStr};
 
@@ -10,39 +11,39 @@ pub struct StatusComment {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub platform: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub cpu_load: Option<f32>,
+    pub cpu_load: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ram_free: Option<f32>,
+    pub ram_free: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ram_total: Option<f32>,
+    pub ram_total: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ntp_offset: Option<f32>,
+    pub ntp_offset: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ntp_correction: Option<f32>,
+    pub ntp_correction: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub voltage: Option<f32>,
+    pub voltage: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub amperage: Option<f32>,
+    pub amperage: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub cpu_temperature: Option<f32>,
+    pub cpu_temperature: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub visible_senders: Option<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub latency: Option<f32>,
+    pub latency: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub senders: Option<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rf_correction_manual: Option<i16>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub rf_correction_automatic: Option<f32>,
+    pub rf_correction_automatic: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub noise: Option<f32>,
+    pub noise: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub senders_signal_quality: Option<f32>,
+    pub senders_signal_quality: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub senders_messages: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub good_senders_signal_quality: Option<f32>,
+    pub good_senders_signal_quality: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub good_senders: Option<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -82,7 +83,7 @@ impl FromStr for StatusComment {
                 && status_comment.cpu_load.is_none()
             {
                 if let Ok(cpu_load) = part[4..].parse::<f32>() {
-                    status_comment.cpu_load = Some(cpu_load);
+                    status_comment.cpu_load = Decimal::from_f32(cpu_load);
                 } else {
                     unparsed.push(part);
                 }
@@ -102,8 +103,8 @@ impl FromStr for StatusComment {
                 let ram_free = first.parse::<f32>().ok();
                 let ram_total = second[1..].parse::<f32>().ok();
                 if ram_free.is_some() && ram_total.is_some() {
-                    status_comment.ram_free = ram_free;
-                    status_comment.ram_total = ram_total;
+                    status_comment.ram_free = ram_free.and_then(Decimal::from_f32);
+                    status_comment.ram_total = ram_total.and_then(Decimal::from_f32);
                 } else {
                     unparsed.push(part);
                 }
@@ -122,8 +123,8 @@ impl FromStr for StatusComment {
                 let ntp_offset = first[0..first.len() - 2].parse::<f32>().ok();
                 let ntp_correction = second[1..].parse::<f32>().ok();
                 if ntp_offset.is_some() && ntp_correction.is_some() {
-                    status_comment.ntp_offset = ntp_offset;
-                    status_comment.ntp_correction = ntp_correction;
+                    status_comment.ntp_offset = ntp_offset.and_then(Decimal::from_f32);
+                    status_comment.ntp_correction = ntp_correction.and_then(Decimal::from_f32);
                 } else {
                     unparsed.push(part);
                 }
@@ -157,7 +158,7 @@ impl FromStr for StatusComment {
             {
                 let latency = part[4..part.len() - 1].parse::<f32>().ok();
                 if latency.is_some() {
-                    status_comment.latency = latency;
+                    status_comment.latency = latency.and_then(Decimal::from_f32);
                 } else {
                     unparsed.push(part);
                 }
@@ -182,8 +183,9 @@ impl FromStr for StatusComment {
                         && noise.is_some()
                     {
                         status_comment.rf_correction_manual = rf_correction_manual;
-                        status_comment.rf_correction_automatic = rf_correction_automatic;
-                        status_comment.noise = noise;
+                        status_comment.rf_correction_automatic =
+                            rf_correction_automatic.and_then(Decimal::from_f32);
+                        status_comment.noise = noise.and_then(Decimal::from_f32)
                     } else {
                         unparsed.push(part);
                         continue;
@@ -204,9 +206,11 @@ impl FromStr for StatusComment {
                         && senders_messages.is_some()
                     {
                         status_comment.rf_correction_manual = rf_correction_manual;
-                        status_comment.rf_correction_automatic = rf_correction_automatic;
-                        status_comment.noise = noise;
-                        status_comment.senders_signal_quality = senders_signal_quality;
+                        status_comment.rf_correction_automatic =
+                            rf_correction_automatic.and_then(Decimal::from_f32);
+                        status_comment.noise = noise.and_then(Decimal::from_f32);
+                        status_comment.senders_signal_quality =
+                            senders_signal_quality.and_then(Decimal::from_f32);
                         status_comment.senders_messages = senders_messages;
                     } else {
                         unparsed.push(part);
@@ -235,11 +239,14 @@ impl FromStr for StatusComment {
                         && good_and_bad_senders.is_some()
                     {
                         status_comment.rf_correction_manual = rf_correction_manual;
-                        status_comment.rf_correction_automatic = rf_correction_automatic;
-                        status_comment.noise = noise;
-                        status_comment.senders_signal_quality = senders_signal_quality;
+                        status_comment.rf_correction_automatic =
+                            rf_correction_automatic.and_then(Decimal::from_f32);
+                        status_comment.noise = noise.and_then(Decimal::from_f32);
+                        status_comment.senders_signal_quality =
+                            senders_signal_quality.and_then(Decimal::from_f32);
                         status_comment.senders_messages = senders_messages;
-                        status_comment.good_senders_signal_quality = good_senders_signal_quality;
+                        status_comment.good_senders_signal_quality =
+                            good_senders_signal_quality.and_then(Decimal::from_f32);
                         status_comment.good_senders = good_senders;
                         status_comment.good_and_bad_senders = good_and_bad_senders;
                     } else {
@@ -254,15 +261,16 @@ impl FromStr for StatusComment {
                 // cpu temperature: +x.xC
                 // x.x: cpu temperature in [°C]
                 if unit == "C" && status_comment.cpu_temperature.is_none() {
-                    status_comment.cpu_temperature = value.parse::<f32>().ok();
+                    status_comment.cpu_temperature =
+                        value.parse::<f32>().ok().and_then(Decimal::from_f32);
                 // voltage: +x.xV
                 // x.x: voltage in [V]
                 } else if unit == "V" && status_comment.voltage.is_none() {
-                    status_comment.voltage = value.parse::<f32>().ok();
+                    status_comment.voltage = value.parse::<f32>().ok().and_then(Decimal::from_f32);
                 // currency: +x.xA
                 // x.x: currency in [A]
                 } else if unit == "A" && status_comment.amperage.is_none() {
-                    status_comment.amperage = value.parse::<f32>().ok();
+                    status_comment.amperage = value.parse::<f32>().ok().and_then(Decimal::from_f32);
                 } else {
                     unparsed.push(part);
                 }
@@ -292,22 +300,22 @@ mod tests {
             StatusComment {
                 version: Some("0.2.7".into()),
                 platform: Some("RPI-GPU".into()),
-                cpu_load: Some(0.7),
-                ram_free: Some(770.2),
-                ram_total: Some(968.2),
-                ntp_offset: Some(1.8),
-                ntp_correction: Some(-3.3),
+                cpu_load: Decimal::from_f32(0.7),
+                ram_free: Decimal::from_f32(770.2),
+                ram_total: Decimal::from_f32(968.2),
+                ntp_offset: Decimal::from_f32(1.8),
+                ntp_correction: Decimal::from_f32(-3.3),
                 voltage: None,
                 amperage: None,
-                cpu_temperature: Some(55.7),
+                cpu_temperature: Decimal::from_f32(55.7),
                 visible_senders: Some(7),
                 senders: Some(8),
                 rf_correction_manual: Some(54),
-                rf_correction_automatic: Some(-1.1),
-                noise: Some(-0.16),
-                senders_signal_quality: Some(7.1),
+                rf_correction_automatic: Decimal::from_f32(-1.1),
+                noise: Decimal::from_f32(-0.16),
+                senders_signal_quality: Decimal::from_f32(7.1),
                 senders_messages: Some(19481),
-                good_senders_signal_quality: Some(16.8),
+                good_senders_signal_quality: Decimal::from_f32(16.8),
                 good_senders: Some(7),
                 good_and_bad_senders: Some(13),
                 ..Default::default()
@@ -323,22 +331,22 @@ mod tests {
             StatusComment {
                 version: Some("0.2.7".into()),
                 platform: Some("RPI-GPU".into()),
-                cpu_load: Some(0.7),
-                ram_free: Some(770.2),
-                ram_total: Some(968.2),
-                ntp_offset: Some(1.8),
-                ntp_correction: Some(-3.3),
+                cpu_load: Decimal::from_f32(0.7),
+                ram_free: Decimal::from_f32(770.2),
+                ram_total: Decimal::from_f32(968.2),
+                ntp_offset: Decimal::from_f32(1.8),
+                ntp_correction: Decimal::from_f32(-3.3),
                 voltage: None,
                 amperage: None,
-                cpu_temperature: Some(55.7),
+                cpu_temperature: Decimal::from_f32(55.7),
                 visible_senders: Some(7),
                 senders: Some(8),
                 rf_correction_manual: Some(54),
-                rf_correction_automatic: Some(-1.1),
-                noise: Some(-0.16),
-                senders_signal_quality: Some(7.1),
+                rf_correction_automatic: Decimal::from_f32(-1.1),
+                noise: Decimal::from_f32(-0.16),
+                senders_signal_quality: Decimal::from_f32(7.1),
                 senders_messages: Some(19481),
-                good_senders_signal_quality: Some(16.8),
+                good_senders_signal_quality: Decimal::from_f32(16.8),
                 good_senders: Some(7),
                 good_and_bad_senders: Some(13),
                 ..Default::default()
@@ -353,8 +361,8 @@ mod tests {
             result,
             StatusComment {
                 rf_correction_manual: Some(29),
-                rf_correction_automatic: Some(0.0),
-                noise: Some(35.22),
+                rf_correction_automatic: Decimal::from_f32(0.0),
+                noise: Decimal::from_f32(35.22),
                 ..Default::default()
             }
         )
@@ -369,9 +377,9 @@ mod tests {
             result,
             StatusComment {
                 rf_correction_manual: Some(41),
-                rf_correction_automatic: Some(56.0),
-                noise: Some(-1.87),
-                senders_signal_quality: Some(0.1),
+                rf_correction_automatic: Decimal::from_f32(56.0),
+                noise: Decimal::from_f32(-1.87),
+                senders_signal_quality: Decimal::from_f32(0.1),
                 senders_messages: Some(1928),
                 ..Default::default()
             }
@@ -387,11 +395,11 @@ mod tests {
             result,
             StatusComment {
                 rf_correction_manual: Some(54),
-                rf_correction_automatic: Some(-1.1),
-                noise: Some(-0.16),
-                senders_signal_quality: Some(7.1),
+                rf_correction_automatic: Decimal::from_f32(-1.1),
+                noise: Decimal::from_f32(-0.16),
+                senders_signal_quality: Decimal::from_f32(7.1),
                 senders_messages: Some(19481),
-                good_senders_signal_quality: Some(16.8),
+                good_senders_signal_quality: Decimal::from_f32(16.8),
                 good_senders: Some(7),
                 good_and_bad_senders: Some(13),
                 ..Default::default()
