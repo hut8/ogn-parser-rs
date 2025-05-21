@@ -35,10 +35,10 @@ impl FromStr for Timestamp {
             .parse::<u8>()
             .map_err(|_| AprsError::InvalidTimestamp(s.to_owned()))?;
 
-        Ok(match b[6] as char {
-            'z' => Timestamp::DDHHMM(one, two, three),
-            'h' => Timestamp::HHMMSS(one, two, three),
-            '/' => Timestamp::Unsupported(s.to_owned()),
+        Ok(match (b[6] as char, one, two, three) {
+            ('z', 0..=31, 0..=23, 0..=59) => Timestamp::DDHHMM(one, two, three),
+            ('h', 0..=23, 0..=59, 0..=59) => Timestamp::HHMMSS(one, two, three),
+            ('/', _, _, _) => Timestamp::Unsupported(s.to_owned()),
             _ => return Err(AprsError::InvalidTimestamp(s.to_owned())),
         })
     }
@@ -113,7 +113,7 @@ mod tests {
 
     #[test]
     fn parse_ddhhmm() {
-        assert_eq!("123456z".parse(), Ok(Timestamp::DDHHMM(12, 34, 56)));
+        assert_eq!("311234z".parse(), Ok(Timestamp::DDHHMM(31, 12, 34)));
     }
 
     #[test]
@@ -146,8 +146,24 @@ mod tests {
     }
 
     #[test]
+    fn invalid_ddhhmm() {
+        assert_eq!(
+            "322460z".parse::<Timestamp>(),
+            Err(AprsError::InvalidTimestamp("322460z".to_owned()))
+        );
+    }
+
+    #[test]
+    fn invalid_hhmmss() {
+        assert_eq!(
+            "246060h".parse::<Timestamp>(),
+            Err(AprsError::InvalidTimestamp("246060h".to_owned()))
+        );
+    }
+
+    #[test]
     fn test_serialize() {
-        let timestamp: Timestamp = "123456z".parse().unwrap();
+        let timestamp: Timestamp = "311234z".parse().unwrap();
         let mut wtr = WriterBuilder::new().from_writer(stdout());
         wtr.serialize(timestamp).unwrap();
         wtr.flush().unwrap();
