@@ -368,7 +368,7 @@ dependencies = [
 
 [[package]]
 name = "ogn-parser"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "approx",
  "chrono",
@@ -382,7 +382,7 @@ dependencies = [
 
 [[package]]
 name = "ogn-parser-pyo3"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "ogn-parser",
  "pyo3",
