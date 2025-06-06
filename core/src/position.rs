@@ -36,7 +36,7 @@ impl FromStr for AprsPosition {
         let has_timestamp = s.starts_with('@') || s.starts_with('/');
 
         // check for minimal message length
-        if (!has_timestamp && s.len() < 19) || (has_timestamp && s.len() < 26) {
+        if (!has_timestamp && s.len() < 20) || (has_timestamp && s.len() < 27) {
             return Err(AprsError::InvalidPosition(s.to_owned()));
         };
 
@@ -222,8 +222,14 @@ mod tests {
     }
 
     #[test]
-    fn test_input_string_too_short() {
-        let result = "/13244".parse::<AprsPosition>();
+    fn test_input_string_with_timestamp_too_short() {
+        let result = r"/104337h5211.24N\00032.65W".parse::<AprsPosition>();
+        assert!(result.is_err(), "Short input string should return an error");
+    }
+
+    #[test]
+    fn test_input_string_without_timestamp_too_short() {
+        let result = r"!4903.50N/07201.75W".parse::<AprsPosition>();
         assert!(result.is_err(), "Short input string should return an error");
     }
 
