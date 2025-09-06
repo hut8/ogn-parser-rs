@@ -78,6 +78,8 @@ pub struct PositionComment {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub flight_number: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub call_sign: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub squawk: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub unparsed: Option<String>,
@@ -350,24 +352,28 @@ impl FromStr for PositionComment {
                 } else {
                     unparsed.push(part);
                 }
-            // Flight number with optional fn prefix: fnA3:TW800 or A2:RA135
-            // Optional "fn" prefix + emitter category + colon + flight number
+            // Call sign and flight number with optional fn prefix: fnA3:TW800 or A2:RA135
+            // If starts with "fn": both flight_number and call_sign get the value
+            // If no "fn": only call_sign gets the value
             } else if part.contains(':')
                 && position_comment.adsb_emitter_category.is_none()
-                && position_comment.flight_number.is_none()
+                && position_comment.call_sign.is_none()
             {
-                if let Some((category_part, flight_num)) = part.split_once(':') {
+                if let Some((category_part, identifier)) = part.split_once(':') {
                     // Check if it starts with "fn"
-                    let category_str = if let Some(stripped) = category_part.strip_prefix("fn") {
-                        stripped
+                    let (category_str, has_fn_prefix) = if let Some(stripped) = category_part.strip_prefix("fn") {
+                        (stripped, true)
                     } else {
-                        category_part
+                        (category_part, false)
                     };
 
                     // Try to parse the emitter category
                     if let Ok(category) = category_str.parse::<AdsbEmitterCategory>() {
                         position_comment.adsb_emitter_category = Some(category);
-                        position_comment.flight_number = Some(flight_num.to_string());
+                        position_comment.call_sign = Some(identifier.to_string());
+                        if has_fn_prefix {
+                            position_comment.flight_number = Some(identifier.to_string());
+                        }
                     } else {
                         unparsed.push(part);
                     }
@@ -508,6 +514,7 @@ fn test_flr() {
             original_address: u32::from_str_radix("D002F8", 16).ok(),
             adsb_emitter_category: None,
             flight_number: None,
+            call_sign: None,
             squawk: None,
             ..Default::default()
         }
@@ -557,6 +564,7 @@ fn test_trk() {
             original_address: None,
             adsb_emitter_category: None,
             flight_number: None,
+            call_sign: None,
             squawk: None,
             unparsed: None
         }
@@ -590,6 +598,7 @@ fn test_trk2() {
             signal_power: Decimal::from_f32(15.8),
             adsb_emitter_category: None,
             flight_number: None,
+            call_sign: None,
             squawk: None,
             ..Default::default()
         }
@@ -624,6 +633,7 @@ fn test_trk2_different_order() {
             signal_power: Decimal::from_f32(15.8),
             adsb_emitter_category: None,
             flight_number: None,
+            call_sign: None,
             squawk: None,
             ..Default::default()
         }
@@ -698,6 +708,7 @@ fn test_flight_number_with_fn_prefix() {
         .unwrap();
     assert_eq!(result.adsb_emitter_category, Some(AdsbEmitterCategory::A3));
     assert_eq!(result.flight_number, Some("TW800".to_string()));
+    assert_eq!(result.call_sign, Some("TW800".to_string()));
 }
 
 #[test]
@@ -706,7 +717,8 @@ fn test_flight_number_without_fn_prefix() {
         .parse::<PositionComment>()
         .unwrap();
     assert_eq!(result.adsb_emitter_category, Some(AdsbEmitterCategory::A2));
-    assert_eq!(result.flight_number, Some("RA135".to_string()));
+    assert_eq!(result.flight_number, None);
+    assert_eq!(result.call_sign, Some("RA135".to_string()));
 }
 
 #[test]
@@ -715,13 +727,15 @@ fn test_flight_number_different_categories() {
         .parse::<PositionComment>()
         .unwrap();
     assert_eq!(result1.adsb_emitter_category, Some(AdsbEmitterCategory::B1));
-    assert_eq!(result1.flight_number, Some("GLIDER1".to_string()));
+    assert_eq!(result1.flight_number, None);
+    assert_eq!(result1.call_sign, Some("GLIDER1".to_string()));
 
     let result2 = "000/000/A=001000 fnC2:SERVICE1"
         .parse::<PositionComment>()
         .unwrap();
     assert_eq!(result2.adsb_emitter_category, Some(AdsbEmitterCategory::C2));
     assert_eq!(result2.flight_number, Some("SERVICE1".to_string()));
+    assert_eq!(result2.call_sign, Some("SERVICE1".to_string()));
 }
 
 #[test]
@@ -731,6 +745,7 @@ fn test_flight_number_invalid_category() {
         .unwrap();
     assert_eq!(result.adsb_emitter_category, None);
     assert_eq!(result.flight_number, None);
+    assert_eq!(result.call_sign, None);
     assert_eq!(result.unparsed, Some("fnZ9:INVALID".to_string()));
 }
 
@@ -772,4 +787,43 @@ fn test_squawk_invalid_characters() {
         .unwrap();
     assert_eq!(result.squawk, None);
     assert_eq!(result.unparsed, Some("Sq12A3".to_string()));
+}
+
+#[test]
+fn test_call_sign_with_fn_prefix() {
+    let result = "000/000/A=001000 fnA1:ABC123"
+        .parse::<PositionComment>()
+        .unwrap();
+    assert_eq!(result.adsb_emitter_category, Some(AdsbEmitterCategory::A1));
+    assert_eq!(result.flight_number, Some("ABC123".to_string()));
+    assert_eq!(result.call_sign, Some("ABC123".to_string()));
+}
+
+#[test]
+fn test_call_sign_without_fn_prefix() {
+    let result = "000/000/A=001000 B2:XYZ789"
+        .parse::<PositionComment>()
+        .unwrap();
+    assert_eq!(result.adsb_emitter_category, Some(AdsbEmitterCategory::B2));
+    assert_eq!(result.flight_number, None);
+    assert_eq!(result.call_sign, Some("XYZ789".to_string()));
+}
+
+#[test]
+fn test_comprehensive_call_sign_flight_number_behavior() {
+    // Test with fn prefix - both fields should be set
+    let with_fn = "000/000/A=001000 fnA3:FLIGHT1"
+        .parse::<PositionComment>()
+        .unwrap();
+    assert_eq!(with_fn.adsb_emitter_category, Some(AdsbEmitterCategory::A3));
+    assert_eq!(with_fn.flight_number, Some("FLIGHT1".to_string()));
+    assert_eq!(with_fn.call_sign, Some("FLIGHT1".to_string()));
+
+    // Test without fn prefix - only call_sign should be set
+    let without_fn = "000/000/A=001000 A3:FLIGHT1"
+        .parse::<PositionComment>()
+        .unwrap();
+    assert_eq!(without_fn.adsb_emitter_category, Some(AdsbEmitterCategory::A3));
+    assert_eq!(without_fn.flight_number, None);
+    assert_eq!(without_fn.call_sign, Some("FLIGHT1".to_string()));
 }
