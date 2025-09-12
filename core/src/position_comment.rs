@@ -82,6 +82,10 @@ pub struct PositionComment {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub squawk: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub slot_frame: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub crc_retry_count: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub unparsed: Option<String>,
 }
 
@@ -323,6 +327,7 @@ impl FromStr for PositionComment {
             // XX.YY: float value for software version
             } else if part.len() >= 2
                 && &part[0..1] == "s"
+                && part[1..].contains('.')
                 && position_comment.software_version.is_none()
             {
                 if let Ok(software_version) = part[1..].parse::<f32>() {
@@ -377,6 +382,26 @@ impl FromStr for PositionComment {
                     } else {
                         unparsed.push(part);
                     }
+                } else {
+                    unparsed.push(part);
+                }
+            // Slot frame: sF<number>
+            } else if part.len() >= 3
+                && part.starts_with("sF")
+                && position_comment.slot_frame.is_none()
+            {
+                if let Ok(slot_frame) = part[2..].parse::<u8>() {
+                    position_comment.slot_frame = Some(slot_frame);
+                } else {
+                    unparsed.push(part);
+                }
+            // CRC retry count: cr<number>
+            } else if part.len() >= 3
+                && part.starts_with("cr")
+                && position_comment.crc_retry_count.is_none()
+            {
+                if let Ok(retry_count) = part[2..].parse::<u8>() {
+                    position_comment.crc_retry_count = Some(retry_count);
                 } else {
                     unparsed.push(part);
                 }
@@ -516,6 +541,8 @@ fn test_flr() {
             flight_number: None,
             call_sign: None,
             squawk: None,
+            slot_frame: None,
+            crc_retry_count: None,
             ..Default::default()
         }
     );
@@ -566,6 +593,8 @@ fn test_trk() {
             flight_number: None,
             call_sign: None,
             squawk: None,
+            slot_frame: None,
+            crc_retry_count: None,
             unparsed: None
         }
     );
@@ -600,6 +629,8 @@ fn test_trk2() {
             flight_number: None,
             call_sign: None,
             squawk: None,
+            slot_frame: None,
+            crc_retry_count: None,
             ..Default::default()
         }
     );
@@ -635,6 +666,8 @@ fn test_trk2_different_order() {
             flight_number: None,
             call_sign: None,
             squawk: None,
+            slot_frame: None,
+            crc_retry_count: None,
             ..Default::default()
         }
     );
@@ -826,4 +859,16 @@ fn test_comprehensive_call_sign_flight_number_behavior() {
     assert_eq!(without_fn.adsb_emitter_category, Some(AdsbEmitterCategory::A3));
     assert_eq!(without_fn.flight_number, None);
     assert_eq!(without_fn.call_sign, Some("FLIGHT1".to_string()));
+}
+
+#[test]
+fn test_slot_frame_and_crc_retry() {
+    let result = "/203637h4638.64N/00738.79E_229/019g026t039 sF1 cr1 3.4dB +2.5kHz 5e"
+        .parse::<PositionComment>()
+        .unwrap();
+    assert_eq!(result.slot_frame, Some(1));
+    assert_eq!(result.crc_retry_count, Some(1));
+    assert_eq!(result.signal_quality, Some(Decimal::from_f32(3.4).unwrap()));
+    assert_eq!(result.frequency_offset, Some(Decimal::from_f32(2.5).unwrap()));
+    assert_eq!(result.error, Some(5));
 }
