@@ -86,6 +86,10 @@ pub struct PositionComment {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub crc_retry_count: Option<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Geoid offset in meters. This value should be added to GPS ellipsoid heights
+    /// at this location to get altitude above mean sea level.
+    pub geoid_offset: Option<i16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub unparsed: Option<String>,
 }
 
@@ -357,6 +361,23 @@ impl FromStr for PositionComment {
                 } else {
                     unparsed.push(part);
                 }
+            // Geoid offset: EGM96:±XXXm or GeoidSepar:±XXXm
+            // ±XXX: signed integer value in meters
+            } else if (part.starts_with("EGM96:") || part.starts_with("GeoidSepar:"))
+                && part.ends_with('m')
+                && position_comment.geoid_offset.is_none()
+            {
+                let prefix_len = if part.starts_with("EGM96:") { 6 } else { 11 }; // "GeoidSepar:" is 11 chars
+                if part.len() >= prefix_len + 2 { // At least prefix + 1 digit + 'm'
+                    let offset_str = &part[prefix_len..part.len()-1]; // Remove prefix and "m" suffix
+                    if let Ok(offset) = offset_str.parse::<i16>() {
+                        position_comment.geoid_offset = Some(offset);
+                    } else {
+                        unparsed.push(part);
+                    }
+                } else {
+                    unparsed.push(part);
+                }
             // Call sign and flight number with optional fn prefix: fnA3:TW800 or A2:RA135
             // If starts with "fn": both flight_number and call_sign get the value
             // If no "fn": only call_sign gets the value
@@ -543,6 +564,7 @@ fn test_flr() {
             squawk: None,
             slot_frame: None,
             crc_retry_count: None,
+            geoid_offset: None,
             ..Default::default()
         }
     );
@@ -595,6 +617,7 @@ fn test_trk() {
             squawk: None,
             slot_frame: None,
             crc_retry_count: None,
+            geoid_offset: None,
             unparsed: None
         }
     );
@@ -631,6 +654,7 @@ fn test_trk2() {
             squawk: None,
             slot_frame: None,
             crc_retry_count: None,
+            geoid_offset: None,
             ..Default::default()
         }
     );
@@ -668,6 +692,7 @@ fn test_trk2_different_order() {
             squawk: None,
             slot_frame: None,
             crc_retry_count: None,
+            geoid_offset: None,
             ..Default::default()
         }
     );
@@ -871,4 +896,56 @@ fn test_slot_frame_and_crc_retry() {
     assert_eq!(result.signal_quality, Some(Decimal::from_f32(3.4).unwrap()));
     assert_eq!(result.frequency_offset, Some(Decimal::from_f32(2.5).unwrap()));
     assert_eq!(result.error, Some(5));
+}
+
+#[test]
+fn test_geoid_offset() {
+    // Test EGM96 format - positive offset
+    let result1 = "EGM96:+52m"
+        .parse::<PositionComment>()
+        .unwrap();
+    assert_eq!(result1.geoid_offset, Some(52));
+    
+    // Test EGM96 format - negative offset
+    let result2 = "EGM96:-15m"
+        .parse::<PositionComment>()
+        .unwrap();
+    assert_eq!(result2.geoid_offset, Some(-15));
+    
+    // Test EGM96 format - zero offset
+    let result3 = "EGM96:0m"
+        .parse::<PositionComment>()
+        .unwrap();
+    assert_eq!(result3.geoid_offset, Some(0));
+    
+    // Test GeoidSepar format - positive offset
+    let result4 = "GeoidSepar:+41m"
+        .parse::<PositionComment>()
+        .unwrap();
+    assert_eq!(result4.geoid_offset, Some(41));
+    
+    // Test GeoidSepar format - negative offset
+    let result5 = "GeoidSepar:-25m"
+        .parse::<PositionComment>()
+        .unwrap();
+    assert_eq!(result5.geoid_offset, Some(-25));
+    
+    // Test with other fields
+    let result6 = "sF1 cr1 EGM96:+52m 3.4dB"
+        .parse::<PositionComment>()
+        .unwrap();
+    assert_eq!(result6.slot_frame, Some(1));
+    assert_eq!(result6.crc_retry_count, Some(1));
+    assert_eq!(result6.geoid_offset, Some(52));
+    assert_eq!(result6.signal_quality, Some(Decimal::from_f32(3.4).unwrap()));
+    assert_eq!(result6.unparsed, None);
+    
+    // Test GeoidSepar with other fields
+    let result7 = "sF2 GeoidSepar:+100m cr3"
+        .parse::<PositionComment>()
+        .unwrap();
+    assert_eq!(result7.slot_frame, Some(2));
+    assert_eq!(result7.geoid_offset, Some(100));
+    assert_eq!(result7.crc_retry_count, Some(3));
+    assert_eq!(result7.unparsed, None);
 }
