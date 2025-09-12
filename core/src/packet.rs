@@ -1,4 +1,4 @@
-use std::fmt::Write;
+use std::fmt::{Display, Write};
 use std::str::FromStr;
 
 use serde::Serialize;
@@ -9,6 +9,181 @@ use crate::AprsPosition;
 use crate::AprsStatus;
 use crate::Callsign;
 use crate::EncodeError;
+
+/// Data source types based on the TO field in APRS packets
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub enum DataSource {
+    /// OGNFLR - for the flarm units - http://flarm.com
+    OgnFlr,
+    /// OGFLR6 - for the flarm units (old version 6) - http://flarm.com
+    OgFlr6,
+    /// OGFLR7 - for the flarm units (experimental) - http://flarm.com
+    OgFlr7,
+    /// OGFLR - for the flarm units - http://flarm.com
+    OgFlr,
+    /// OGNDSX - for the T_advisory - http://www.d-s-x.net/
+    OgnDsx,
+    /// OGNTRK - for the OGN tracker - http://wiki.glidernet.org
+    OgnTrk,
+    /// OGADSL - for the OGN tracker with ADS-L protocol - http://wiki.glidernet.org
+    OgAdsl,
+    /// OGADSB - for the ADS-B - https://www.adsbexchange.com/
+    OgAdsb,
+    /// OGNFNT - for the FANET - https://www.skytraxx.eu/
+    OgnFnt,
+    /// OGNPAW - for the PilotAware - https://www.pilotaware.com/
+    OgnPaw,
+    /// OGSPOT - for the SPOT - https://www.findmespot.com
+    OgSpot,
+    /// OGSPID - for the Spider - https://www.spidertracks.com/
+    OgSpid,
+    /// OGLT24 - for the LiveTrack24 - https://www.livetrack24.com/
+    OgLt24,
+    /// OGSKYL - for the Skyline - https://www.xcsoar.org/
+    OgSkyl,
+    /// OGCAPT - for the Capture - https://www.capturs.com/
+    OgCapt,
+    /// OGNAVI - for the Naviter devices - http://naviter.com
+    OgnAvi,
+    /// OGNMAV - for the MAVlink from drones - https://ardupilot.org/dev/docs/mavlink-basics.html
+    OgnMav,
+    /// OGFLYM - for the Flymaster devices - https://www.flymaster.net/
+    OgFlym,
+    /// OGNINRE - for the Garmin InReach devices - https://discover.garmin.com/en-US/inreach/personal/
+    OgnInRe,
+    /// OGEVARIO - for the eVario devices - https://apps.apple.com/us/app/evario-variometer-paraglider/id1243708983
+    OgEvario,
+    /// OGNDELAY - for the IGC sanctioned championships delayed messages using OGN/IGC approved trackers, it contains the number of seconds delayed
+    OgnDelay,
+    /// OGPAW - for the PilotAware devices - https://www.pilotaware.com/
+    OgPaw,
+    /// OGNTTN - for the The Things Network devices - https://www.thethingsnetwork.org/
+    OgnTtn,
+    /// OGNHEL - for the Helium LoRaWan devices - https://www.helium.com/
+    OgnHel,
+    /// OGAVZ - for the AVIAZE devices - https://www.aviaze.com/
+    OgAvz,
+    /// OGNSKY - for the SafeSky devices/app - https://www.safesky.app/en
+    OgnSky,
+    /// OGNMKT - for the MicroTrack devices - https://microtrak.fr/
+    OgnMkt,
+    /// OGNEMO - for the Canadian NEMO devices
+    OgnEmo,
+    /// OGNMYC - for MyCloudbase Tracker - https://mycloudbase.com/tracker/
+    OgnMyc,
+    /// OGSTUX - for Stratux trackers
+    OgStux,
+    /// OGNSXR - for moshe.braner@gmail.com - https://github.com/moshe-braner/Open-Glider-Network-Groundstation
+    OgnSxr,
+    /// OGAIRM - for AirMate - https://www.airmate.aero
+    OgAirm,
+    /// FXCAPP - for flyxc - https://flyxc.app/
+    FxcApp,
+    /// OGAPIK - for APIK OEM and compliant devices - https://api-k.com
+    OgApik,
+    /// OGMSHT - for meshtastic devices - https://meshtastic.org/
+    OgMsht,
+    /// OGNDVS - for weather devices like Davis - https://www.davisinstruments.com/pages/weather-stations https://www.sainlogic.com/
+    OgnDvs,
+    /// OGNWMN - for the Wingman - https://www.wingmanfly.app/
+    OgnWmn,
+    /// OGNVOL - for the Volandoo - https://www.volandoo.com/
+    OgnVol,
+}
+
+impl FromStr for DataSource {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "OGNFLR" => Ok(DataSource::OgnFlr),
+            "OGFLR6" => Ok(DataSource::OgFlr6),
+            "OGFLR7" => Ok(DataSource::OgFlr7),
+            "OGFLR" => Ok(DataSource::OgFlr),
+            "OGNDSX" => Ok(DataSource::OgnDsx),
+            "OGNTRK" => Ok(DataSource::OgnTrk),
+            "OGADSL" => Ok(DataSource::OgAdsl),
+            "OGADSB" => Ok(DataSource::OgAdsb),
+            "OGNFNT" => Ok(DataSource::OgnFnt),
+            "OGNPAW" => Ok(DataSource::OgnPaw),
+            "OGSPOT" => Ok(DataSource::OgSpot),
+            "OGSPID" => Ok(DataSource::OgSpid),
+            "OGLT24" => Ok(DataSource::OgLt24),
+            "OGSKYL" => Ok(DataSource::OgSkyl),
+            "OGCAPT" => Ok(DataSource::OgCapt),
+            "OGNAVI" => Ok(DataSource::OgnAvi),
+            "OGNMAV" => Ok(DataSource::OgnMav),
+            "OGFLYM" => Ok(DataSource::OgFlym),
+            "OGNINRE" => Ok(DataSource::OgnInRe),
+            "OGEVARIO" => Ok(DataSource::OgEvario),
+            "OGNDELAY" => Ok(DataSource::OgnDelay),
+            "OGPAW" => Ok(DataSource::OgPaw),
+            "OGNTTN" => Ok(DataSource::OgnTtn),
+            "OGNHEL" => Ok(DataSource::OgnHel),
+            "OGAVZ" => Ok(DataSource::OgAvz),
+            "OGNSKY" => Ok(DataSource::OgnSky),
+            "OGNMKT" => Ok(DataSource::OgnMkt),
+            "OGNEMO" => Ok(DataSource::OgnEmo),
+            "OGNMYC" => Ok(DataSource::OgnMyc),
+            "OGSTUX" => Ok(DataSource::OgStux),
+            "OGNSXR" => Ok(DataSource::OgnSxr),
+            "OGAIRM" => Ok(DataSource::OgAirm),
+            "FXCAPP" => Ok(DataSource::FxcApp),
+            "OGAPIK" => Ok(DataSource::OgApik),
+            "OGMSHT" => Ok(DataSource::OgMsht),
+            "OGNDVS" => Ok(DataSource::OgnDvs),
+            "OGNWMN" => Ok(DataSource::OgnWmn),
+            "OGNVOL" => Ok(DataSource::OgnVol),
+            _ => Err(()),
+        }
+    }
+}
+
+impl Display for DataSource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            DataSource::OgnFlr => "OGNFLR",
+            DataSource::OgFlr6 => "OGFLR6",
+            DataSource::OgFlr7 => "OGFLR7",
+            DataSource::OgFlr => "OGFLR",
+            DataSource::OgnDsx => "OGNDSX",
+            DataSource::OgnTrk => "OGNTRK",
+            DataSource::OgAdsl => "OGADSL",
+            DataSource::OgAdsb => "OGADSB",
+            DataSource::OgnFnt => "OGNFNT",
+            DataSource::OgnPaw => "OGNPAW",
+            DataSource::OgSpot => "OGSPOT",
+            DataSource::OgSpid => "OGSPID",
+            DataSource::OgLt24 => "OGLT24",
+            DataSource::OgSkyl => "OGSKYL",
+            DataSource::OgCapt => "OGCAPT",
+            DataSource::OgnAvi => "OGNAVI",
+            DataSource::OgnMav => "OGNMAV",
+            DataSource::OgFlym => "OGFLYM",
+            DataSource::OgnInRe => "OGNINRE",
+            DataSource::OgEvario => "OGEVARIO",
+            DataSource::OgnDelay => "OGNDELAY",
+            DataSource::OgPaw => "OGPAW",
+            DataSource::OgnTtn => "OGNTTN",
+            DataSource::OgnHel => "OGNHEL",
+            DataSource::OgAvz => "OGAVZ",
+            DataSource::OgnSky => "OGNSKY",
+            DataSource::OgnMkt => "OGNMKT",
+            DataSource::OgnEmo => "OGNEMO",
+            DataSource::OgnMyc => "OGNMYC",
+            DataSource::OgStux => "OGSTUX",
+            DataSource::OgnSxr => "OGNSXR",
+            DataSource::OgAirm => "OGAIRM",
+            DataSource::FxcApp => "FXCAPP",
+            DataSource::OgApik => "OGAPIK",
+            DataSource::OgMsht => "OGMSHT",
+            DataSource::OgnDvs => "OGNDVS",
+            DataSource::OgnWmn => "OGNWMN",
+            DataSource::OgnVol => "OGNVOL",
+        };
+        write!(f, "{}", s)
+    }
+}
 
 #[derive(PartialEq, Debug, Clone, Serialize)]
 pub struct AprsPacket {
@@ -72,6 +247,11 @@ impl AprsPacket {
         self.data.encode(buf)?;
 
         Ok(())
+    }
+
+    /// Parse the TO field and return the data source type if it matches a known variant
+    pub fn data_source(&self) -> Option<DataSource> {
+        self.to.0.parse().ok()
     }
 }
 
@@ -215,6 +395,136 @@ mod tests {
             let mut buf = String::new();
             v.parse::<AprsPacket>().unwrap().encode(&mut buf).unwrap();
             assert_eq!(buf, v)
+        }
+    }
+
+    #[test]
+    fn test_data_source_from_str() {
+        // Test a few key data sources
+        assert_eq!("OGNFLR".parse::<DataSource>().unwrap(), DataSource::OgnFlr);
+        assert_eq!("OGFLR6".parse::<DataSource>().unwrap(), DataSource::OgFlr6);
+        assert_eq!("OGFLR7".parse::<DataSource>().unwrap(), DataSource::OgFlr7);
+        assert_eq!("OGNTRK".parse::<DataSource>().unwrap(), DataSource::OgnTrk);
+        assert_eq!("OGADSB".parse::<DataSource>().unwrap(), DataSource::OgAdsb);
+        assert_eq!("FXCAPP".parse::<DataSource>().unwrap(), DataSource::FxcApp);
+        assert_eq!("OGNVOL".parse::<DataSource>().unwrap(), DataSource::OgnVol);
+
+        // Test unknown data source
+        assert!("UNKNOWN".parse::<DataSource>().is_err());
+        assert!("".parse::<DataSource>().is_err());
+    }
+
+    #[test]
+    fn test_data_source_display() {
+        // Test display formatting
+        assert_eq!(format!("{}", DataSource::OgnFlr), "OGNFLR");
+        assert_eq!(format!("{}", DataSource::OgFlr6), "OGFLR6");
+        assert_eq!(format!("{}", DataSource::OgFlr7), "OGFLR7");
+        assert_eq!(format!("{}", DataSource::OgnTrk), "OGNTRK");
+        assert_eq!(format!("{}", DataSource::OgAdsb), "OGADSB");
+        assert_eq!(format!("{}", DataSource::FxcApp), "FXCAPP");
+        assert_eq!(format!("{}", DataSource::OgnVol), "OGNVOL");
+    }
+
+    #[test]
+    fn test_data_source_roundtrip() {
+        // Test that all variants can roundtrip through string conversion
+        let test_cases = [
+            DataSource::OgnFlr,
+            DataSource::OgFlr6,
+            DataSource::OgFlr7,
+            DataSource::OgFlr,
+            DataSource::OgnDsx,
+            DataSource::OgnTrk,
+            DataSource::OgAdsl,
+            DataSource::OgAdsb,
+            DataSource::OgnFnt,
+            DataSource::OgnPaw,
+            DataSource::OgSpot,
+            DataSource::OgSpid,
+            DataSource::OgLt24,
+            DataSource::OgSkyl,
+            DataSource::OgCapt,
+            DataSource::OgnAvi,
+            DataSource::OgnMav,
+            DataSource::OgFlym,
+            DataSource::OgnInRe,
+            DataSource::OgEvario,
+            DataSource::OgnDelay,
+            DataSource::OgPaw,
+            DataSource::OgnTtn,
+            DataSource::OgnHel,
+            DataSource::OgAvz,
+            DataSource::OgnSky,
+            DataSource::OgnMkt,
+            DataSource::OgnEmo,
+            DataSource::OgnMyc,
+            DataSource::OgStux,
+            DataSource::OgnSxr,
+            DataSource::OgAirm,
+            DataSource::FxcApp,
+            DataSource::OgApik,
+            DataSource::OgMsht,
+            DataSource::OgnDvs,
+            DataSource::OgnWmn,
+            DataSource::OgnVol,
+        ];
+
+        for data_source in test_cases {
+            let string_repr = format!("{}", data_source);
+            let parsed = string_repr.parse::<DataSource>().unwrap();
+            assert_eq!(data_source, parsed, "Failed roundtrip for {}", string_repr);
+        }
+    }
+
+    #[test]
+    fn test_device_type_method() {
+        // Test with known data sources
+        let packet_ognflr = "ICA3D17F2>OGNFLR,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054"
+            .parse::<AprsPacket>()
+            .unwrap();
+        assert_eq!(packet_ognflr.device_type(), Some(DataSource::OgnFlr));
+
+        let packet_ogadsb = "ICA3D17F2>OGADSB,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054"
+            .parse::<AprsPacket>()
+            .unwrap();
+        assert_eq!(packet_ogadsb.device_type(), Some(DataSource::OgAdsb));
+
+        let packet_fxcapp = "ICA3D17F2>FXCAPP,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054"
+            .parse::<AprsPacket>()
+            .unwrap();
+        assert_eq!(packet_fxcapp.device_type(), Some(DataSource::FxcApp));
+
+        // Test with unknown data source
+        let packet_unknown = "ICA3D17F2>APRS,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054"
+            .parse::<AprsPacket>()
+            .unwrap();
+        assert_eq!(packet_unknown.device_type(), None);
+
+        // Test with completely unknown TO field
+        let packet_custom = "ICA3D17F2>CUSTOM123,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054"
+            .parse::<AprsPacket>()
+            .unwrap();
+        assert_eq!(packet_custom.device_type(), None);
+    }
+
+    #[test]
+    fn test_device_type_comprehensive() {
+        // Demonstrate the comprehensive functionality with various data sources
+        let test_packets = vec![
+            ("ICA3D17F2>OGNFLR,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054", Some(DataSource::OgnFlr)),
+            ("ICA3D17F2>OGFLR6,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054", Some(DataSource::OgFlr6)),
+            ("ICA3D17F2>OGADSB,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054", Some(DataSource::OgAdsb)),
+            ("ICA3D17F2>OGNTRK,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054", Some(DataSource::OgnTrk)),
+            ("ICA3D17F2>FXCAPP,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054", Some(DataSource::FxcApp)),
+            ("ICA3D17F2>OGNVOL,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054", Some(DataSource::OgnVol)),
+            ("ICA3D17F2>APRS,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054", None),
+            ("ICA3D17F2>UNKNOWN,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054", None),
+        ];
+
+        for (packet_str, expected) in test_packets {
+            let packet = packet_str.parse::<AprsPacket>().unwrap();
+            assert_eq!(packet.device_type(), expected, "Failed for packet with TO field: {}", packet.to);
         }
     }
 }
