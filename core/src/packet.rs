@@ -483,29 +483,29 @@ mod tests {
         let packet_ognflr = "ICA3D17F2>OGNFLR,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054"
             .parse::<AprsPacket>()
             .unwrap();
-        assert_eq!(packet_ognflr.device_type(), Some(DataSource::OgnFlr));
+        assert_eq!(packet_ognflr.data_source(), Some(DataSource::OgnFlr));
 
         let packet_ogadsb = "ICA3D17F2>OGADSB,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054"
             .parse::<AprsPacket>()
             .unwrap();
-        assert_eq!(packet_ogadsb.device_type(), Some(DataSource::OgAdsb));
+        assert_eq!(packet_ogadsb.data_source(), Some(DataSource::OgAdsb));
 
         let packet_fxcapp = "ICA3D17F2>FXCAPP,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054"
             .parse::<AprsPacket>()
             .unwrap();
-        assert_eq!(packet_fxcapp.device_type(), Some(DataSource::FxcApp));
+        assert_eq!(packet_fxcapp.data_source(), Some(DataSource::FxcApp));
 
         // Test with unknown data source
         let packet_unknown = "ICA3D17F2>APRS,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054"
             .parse::<AprsPacket>()
             .unwrap();
-        assert_eq!(packet_unknown.device_type(), None);
+        assert_eq!(packet_unknown.data_source(), None);
 
         // Test with completely unknown TO field
         let packet_custom = "ICA3D17F2>CUSTOM123,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054"
             .parse::<AprsPacket>()
             .unwrap();
-        assert_eq!(packet_custom.device_type(), None);
+        assert_eq!(packet_custom.data_source(), None);
     }
 
     #[test]
@@ -524,7 +524,7 @@ mod tests {
 
         for (packet_str, expected) in test_packets {
             let packet = packet_str.parse::<AprsPacket>().unwrap();
-            assert_eq!(packet.device_type(), expected, "Failed for packet with TO field: {}", packet.to);
+            assert_eq!(packet.data_source(), expected, "Failed for packet with TO field: {}", packet.to);
         }
     }
 }

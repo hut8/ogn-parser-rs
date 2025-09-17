@@ -102,9 +102,10 @@ impl FromStr for PositionComment {
         let mut unparsed: Vec<_> = vec![];
         for (idx, part) in s.split_ascii_whitespace().enumerate() {
             // The first part can be course + speed + altitude: ccc/sss/A=aaaaaa
+            // or just course + speed: ccc/sss
             // ccc: course in degrees 0-360
             // sss: speed in km/h
-            // aaaaaa: altitude in feet
+            // aaaaaa: altitude in feet (optional)
             if idx == 0
                 && part.len() == 16
                 && &part[3..4] == "/"
@@ -122,6 +123,23 @@ impl FromStr for PositionComment {
                     position_comment.course = course;
                     position_comment.speed = speed;
                     position_comment.altitude = altitude;
+                } else {
+                    unparsed.push(part);
+                }
+            // ... or just course + speed: ccc/sss
+            } else if idx == 0
+                && part.len() == 7
+                && &part[3..4] == "/"
+                && position_comment.course.is_none()
+            {
+                let course = part[0..3].parse::<u16>().ok();
+                let speed = part[4..7].parse::<u16>().ok();
+                if course.is_some()
+                    && course.unwrap() <= 360
+                    && speed.is_some()
+                {
+                    position_comment.course = course;
+                    position_comment.speed = speed;
                 } else {
                     unparsed.push(part);
                 }
@@ -896,6 +914,31 @@ fn test_slot_frame_and_crc_retry() {
     assert_eq!(result.signal_quality, Some(Decimal::from_f32(3.4).unwrap()));
     assert_eq!(result.frequency_offset, Some(Decimal::from_f32(2.5).unwrap()));
     assert_eq!(result.error, Some(5));
+}
+
+#[test]
+fn test_course_speed_without_altitude() {
+    let result = "000/000 !W90! id014A000A C2:FOLLOW1"
+        .parse::<PositionComment>()
+        .unwrap();
+    assert_eq!(result.course, Some(0));
+    assert_eq!(result.speed, Some(0));
+    assert_eq!(result.altitude, None);
+    assert_eq!(result.additional_precision, Some(AdditionalPrecision { lat: 9, lon: 0 }));
+    assert_eq!(result.id.unwrap().address, 0x4A000A);
+    assert_eq!(result.adsb_emitter_category, Some(AdsbEmitterCategory::C2));
+    assert_eq!(result.call_sign, Some("FOLLOW1".to_string()));
+    assert_eq!(result.unparsed, None);
+
+    // Test with non-zero values
+    let result2 = "180/045 !W12!"
+        .parse::<PositionComment>()
+        .unwrap();
+    assert_eq!(result2.course, Some(180));
+    assert_eq!(result2.speed, Some(45));
+    assert_eq!(result2.altitude, None);
+    assert_eq!(result2.additional_precision, Some(AdditionalPrecision { lat: 1, lon: 2 }));
+    assert_eq!(result2.unparsed, None);
 }
 
 #[test]
