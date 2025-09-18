@@ -49,6 +49,10 @@ pub struct StatusComment {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub good_and_bad_senders: Option<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Geoid offset in meters. This value should be added to GPS ellipsoid heights
+    /// at this location to get altitude above mean sea level.
+    pub geoid_offset: Option<i16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub unparsed: Option<String>,
 }
 
@@ -257,6 +261,23 @@ impl FromStr for StatusComment {
                     unparsed.push(part);
                     continue;
                 }
+            // Geoid offset: EGM96:±XXXm or GeoidSepar:±XXXm
+            // ±XXX: signed integer value in meters
+            } else if (part.starts_with("EGM96:") || part.starts_with("GeoidSepar:"))
+                && part.ends_with('m')
+                && status_comment.geoid_offset.is_none()
+            {
+                let prefix_len = if part.starts_with("EGM96:") { 6 } else { 11 }; // "GeoidSepar:" is 11 chars
+                if part.len() >= prefix_len + 2 { // At least prefix + 1 digit + 'm'
+                    let offset_str = &part[prefix_len..part.len()-1]; // Remove prefix and "m" suffix
+                    if let Ok(offset) = offset_str.parse::<i16>() {
+                        status_comment.geoid_offset = Some(offset);
+                    } else {
+                        unparsed.push(part);
+                    }
+                } else {
+                    unparsed.push(part);
+                }
             } else if let Some((value, unit)) = split_value_unit(part) {
                 // cpu temperature: +x.xC
                 // x.x: cpu temperature in [°C]
@@ -318,6 +339,7 @@ mod tests {
                 good_senders_signal_quality: Decimal::from_f32(16.8),
                 good_senders: Some(7),
                 good_and_bad_senders: Some(13),
+                geoid_offset: None,
                 ..Default::default()
             }
         );
@@ -349,6 +371,7 @@ mod tests {
                 good_senders_signal_quality: Decimal::from_f32(16.8),
                 good_senders: Some(7),
                 good_and_bad_senders: Some(13),
+                geoid_offset: None,
                 ..Default::default()
             }
         );
@@ -387,6 +410,66 @@ mod tests {
     }
 
     #[test]
+    fn test_status_with_geoid_offset() {
+        let result = "v0.3.2.arm64 CPU:0.7 RAM:790.3/3976.3MB NTP:0.3ms/-15.3ppm +61.3C EGM96:+49m 0/0Acfts[1h] RF:+0+0.0ppm/+4.10dB/+2.9dB@10km[751698]/+10.1dB@10km[1/2]".parse::<StatusComment>().unwrap();
+        assert_eq!(
+            result,
+            StatusComment {
+                version: Some("0.3.2".into()),
+                platform: Some("arm64".into()),
+                cpu_load: Decimal::from_f32(0.7),
+                ram_free: Decimal::from_f32(790.3),
+                ram_total: Decimal::from_f32(3976.3),
+                ntp_offset: Decimal::from_f32(0.3),
+                ntp_correction: Decimal::from_f32(-15.3),
+                voltage: None,
+                amperage: None,
+                cpu_temperature: Decimal::from_f32(61.3),
+                visible_senders: Some(0),
+                latency: None,
+                senders: Some(0),
+                rf_correction_manual: Some(0),
+                rf_correction_automatic: Decimal::from_f32(0.0),
+                noise: Decimal::from_f32(4.10),
+                senders_signal_quality: Decimal::from_f32(2.9),
+                senders_messages: Some(751698),
+                good_senders_signal_quality: Decimal::from_f32(10.1),
+                good_senders: Some(1),
+                good_and_bad_senders: Some(2),
+                geoid_offset: Some(49),
+                unparsed: None,
+            }
+        );
+    }
+
+    #[test]
+    fn test_geoid_offset_formats() {
+        // Test EGM96 format - positive offset
+        let result1 = "EGM96:+52m"
+            .parse::<StatusComment>()
+            .unwrap();
+        assert_eq!(result1.geoid_offset, Some(52));
+
+        // Test EGM96 format - negative offset
+        let result2 = "EGM96:-15m"
+            .parse::<StatusComment>()
+            .unwrap();
+        assert_eq!(result2.geoid_offset, Some(-15));
+
+        // Test GeoidSepar format - positive offset
+        let result3 = "GeoidSepar:+41m"
+            .parse::<StatusComment>()
+            .unwrap();
+        assert_eq!(result3.geoid_offset, Some(41));
+
+        // Test GeoidSepar format - negative offset
+        let result4 = "GeoidSepar:-25m"
+            .parse::<StatusComment>()
+            .unwrap();
+        assert_eq!(result4.geoid_offset, Some(-25));
+    }
+
+    #[test]
     fn test_rf_10() {
         let result = "RF:+54-1.1ppm/-0.16dB/+7.1dB@10km[19481]/+16.8dB@10km[7/13]"
             .parse::<StatusComment>()
@@ -402,6 +485,7 @@ mod tests {
                 good_senders_signal_quality: Decimal::from_f32(16.8),
                 good_senders: Some(7),
                 good_and_bad_senders: Some(13),
+                geoid_offset: None,
                 ..Default::default()
             }
         )

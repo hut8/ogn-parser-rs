@@ -509,6 +509,35 @@ mod tests {
     }
 
     #[test]
+    fn test_ognsdr_status_packet() {
+        let result = r"Herborn>OGNSDR,TCPIP*,qAC,GLIDERN5:>225942h v0.3.2.arm64 CPU:0.7 RAM:790.3/3976.3MB NTP:0.3ms/-15.3ppm +61.3C EGM96:+49m 0/0Acfts[1h] RF:+0+0.0ppm/+4.10dB/+2.9dB@10km[751698]/+10.1dB@10km[1/2]"
+            .parse::<AprsPacket>()
+            .unwrap();
+
+        assert_eq!(result.from, Callsign::new("Herborn"));
+        assert_eq!(result.to, Callsign::new("OGNSDR"));
+        assert_eq!(
+            result.via,
+            vec![
+                Callsign::new("TCPIP*"),
+                Callsign::new("qAC"),
+                Callsign::new("GLIDERN5")
+            ]
+        );
+
+        match result.data {
+            AprsData::Status(status) => {
+                assert_eq!(status.timestamp, Some(Timestamp::HHMMSS(22, 59, 42)));
+                assert_eq!(status.comment.version, Some("0.3.2".to_string()));
+                assert_eq!(status.comment.platform, Some("arm64".to_string()));
+                assert_eq!(status.comment.geoid_offset, Some(49));
+                assert_eq!(status.comment.unparsed, None);
+            }
+            _ => panic!("Expected Status data type"),
+        }
+    }
+
+    #[test]
     fn test_device_type_comprehensive() {
         // Demonstrate the comprehensive functionality with various data sources
         let test_packets = vec![
