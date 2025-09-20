@@ -27,7 +27,7 @@ pub struct PositionComment {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub speed: Option<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub altitude: Option<u32>,
+    pub altitude: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub wind_direction: Option<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -114,7 +114,7 @@ impl FromStr for PositionComment {
             {
                 let course = part[0..3].parse::<u16>().ok();
                 let speed = part[4..7].parse::<u16>().ok();
-                let altitude = part[10..16].parse::<u32>().ok();
+                let altitude = part[10..16].parse::<i32>().ok();
                 if course.is_some()
                     && course.unwrap() <= 360
                     && speed.is_some()
@@ -150,7 +150,7 @@ impl FromStr for PositionComment {
                 && &part[0..3] == "/A="
                 && position_comment.altitude.is_none()
             {
-                match part[3..].parse::<u32>().ok() {
+                match part[3..].parse::<i32>().ok() {
                     Some(altitude) => position_comment.altitude = Some(altitude),
                     None => unparsed.push(part),
                 }
@@ -938,6 +938,30 @@ fn test_course_speed_without_altitude() {
     assert_eq!(result2.speed, Some(45));
     assert_eq!(result2.altitude, None);
     assert_eq!(result2.additional_precision, Some(AdditionalPrecision { lat: 1, lon: 2 }));
+    assert_eq!(result2.unparsed, None);
+}
+
+#[test]
+fn test_negative_altitude() {
+    let result = "288/044/A=-00006 !W25! id20F63E59 +000fpm gps4x3"
+        .parse::<PositionComment>()
+        .unwrap();
+    assert_eq!(result.course, Some(288));
+    assert_eq!(result.speed, Some(44));
+    assert_eq!(result.altitude, Some(-6));
+    assert_eq!(result.additional_precision, Some(AdditionalPrecision { lat: 2, lon: 5 }));
+    assert_eq!(result.id.unwrap().address, 0xF63E59);
+    assert_eq!(result.climb_rate, Some(0));
+    assert_eq!(result.gps_quality, Some("4x3".to_string()));
+    assert_eq!(result.unparsed, None);
+
+    // Test altitude-only negative format
+    let result2 = "/A=-00123"
+        .parse::<PositionComment>()
+        .unwrap();
+    assert_eq!(result2.course, None);
+    assert_eq!(result2.speed, None);
+    assert_eq!(result2.altitude, Some(-123));
     assert_eq!(result2.unparsed, None);
 }
 

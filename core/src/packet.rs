@@ -538,6 +538,39 @@ mod tests {
     }
 
     #[test]
+    fn test_ognsky_negative_altitude_packet() {
+        let result = r"SKYF63E59>OGNSKY,qAS,SafeSky:/183123h4547.25N/01250.21E'288/044/A=-00006 !W25! id20F63E59 +000fpm gps4x3"
+            .parse::<AprsPacket>()
+            .unwrap();
+
+        assert_eq!(result.from, Callsign::new("SKYF63E59"));
+        assert_eq!(result.to, Callsign::new("OGNSKY"));
+        assert_eq!(result.data_source(), Some(DataSource::OgnSky));
+        assert_eq!(
+            result.via,
+            vec![
+                Callsign::new("qAS"),
+                Callsign::new("SafeSky")
+            ]
+        );
+
+        match result.data {
+            AprsData::Position(position) => {
+                assert_eq!(position.timestamp, Some(Timestamp::HHMMSS(18, 31, 23)));
+                assert_relative_eq!(*position.latitude, 45.787533333333336);
+                assert_relative_eq!(*position.longitude, 12.836916666666667);
+                assert_eq!(position.comment.course, Some(288));
+                assert_eq!(position.comment.speed, Some(44));
+                assert_eq!(position.comment.altitude, Some(-6)); // Negative altitude!
+                assert_eq!(position.comment.climb_rate, Some(0));
+                assert_eq!(position.comment.gps_quality, Some("4x3".to_string()));
+                assert_eq!(position.comment.unparsed, None);
+            }
+            _ => panic!("Expected Position data type"),
+        }
+    }
+
+    #[test]
     fn test_device_type_comprehensive() {
         // Demonstrate the comprehensive functionality with various data sources
         let test_packets = vec![
