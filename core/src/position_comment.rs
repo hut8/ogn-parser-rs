@@ -101,58 +101,77 @@ impl FromStr for PositionComment {
         };
         let mut unparsed: Vec<_> = vec![];
         for (idx, part) in s.split_ascii_whitespace().enumerate() {
-            // The first part can be course + speed + altitude: ccc/sss/A=aaaaaa
-            // or just course + speed: ccc/sss
-            // ccc: course in degrees 0-360
-            // sss: speed in km/h
-            // aaaaaa: altitude in feet (optional)
-            if idx == 0
-                && part.len() == 16
-                && &part[3..4] == "/"
-                && &part[7..10] == "/A="
-                && position_comment.course.is_none()
-            {
-                let course = part[0..3].parse::<u16>().ok();
-                let speed = part[4..7].parse::<u16>().ok();
-                let altitude = part[10..16].parse::<i32>().ok();
-                if course.is_some()
-                    && course.unwrap() <= 360
-                    && speed.is_some()
-                    && altitude.is_some()
-                {
-                    position_comment.course = course;
-                    position_comment.speed = speed;
-                    position_comment.altitude = altitude;
-                } else {
-                    unparsed.push(part);
-                }
-            // ... or just course + speed: ccc/sss
-            } else if idx == 0
-                && part.len() == 7
-                && &part[3..4] == "/"
-                && position_comment.course.is_none()
-            {
-                let course = part[0..3].parse::<u16>().ok();
-                let speed = part[4..7].parse::<u16>().ok();
-                if course.is_some()
-                    && course.unwrap() <= 360
-                    && speed.is_some()
-                {
-                    position_comment.course = course;
-                    position_comment.speed = speed;
-                } else {
-                    unparsed.push(part);
-                }
             // ... or just the altitude: /A=aaaaaa
-            // aaaaaa: altitude in feet
-            } else if idx == 0
-                && part.len() == 9
-                && &part[0..3] == "/A="
+            // aaaaaa: altitude in feet (can be negative)
+            // Handle this FIRST to avoid conflicts with flexible parsing
+            if idx == 0
+                && part.starts_with("/A=")
                 && position_comment.altitude.is_none()
             {
                 match part[3..].parse::<i32>().ok() {
                     Some(altitude) => position_comment.altitude = Some(altitude),
                     None => unparsed.push(part),
+                }
+            // The first part can be course + speed + altitude: ccc/sss/A=aaaaaa
+            // ccc: course in degrees 0-360 (can be decimal like 166.56186289668)
+            // sss: speed in km/h
+            // aaaaaa: altitude in feet (optional)
+            } else if idx == 0
+                && part.contains("/A=")
+                && position_comment.course.is_none()
+            {
+                if let Some(altitude_pos) = part.find("/A=") {
+                    let course_speed_part = &part[0..altitude_pos];
+                    let altitude_part = &part[altitude_pos + 3..];
+
+                    if let Some(speed_pos) = course_speed_part.rfind('/') {
+                        let course_str = &course_speed_part[0..speed_pos];
+                        let speed_str = &course_speed_part[speed_pos + 1..];
+
+                        let course = course_str.parse::<f32>().ok().and_then(|c| {
+                            if c >= 0.0 && c <= 360.0 { Some(c.round() as u16) } else { None }
+                        });
+                        let speed = speed_str.parse::<u16>().ok();
+                        let altitude = altitude_part.parse::<i32>().ok();
+
+                        if course.is_some() && speed.is_some() && altitude.is_some() {
+                            position_comment.course = course;
+                            position_comment.speed = speed;
+                            position_comment.altitude = altitude;
+                        } else {
+                            unparsed.push(part);
+                        }
+                    } else {
+                        unparsed.push(part);
+                    }
+                } else {
+                    unparsed.push(part);
+                }
+            // ... or just course + speed: ccc/sss (flexible format)
+            // But avoid interfering with weather reports (which contain letters after numbers)
+            } else if idx == 0
+                && part.contains('/')
+                && !part.contains("/A=")
+                && position_comment.course.is_none()
+                && !part.chars().any(|c| c.is_alphabetic()) // No letters (to avoid weather reports)
+            {
+                if let Some(speed_pos) = part.rfind('/') {
+                    let course_str = &part[0..speed_pos];
+                    let speed_str = &part[speed_pos + 1..];
+
+                    let course = course_str.parse::<f32>().ok().and_then(|c| {
+                        if c >= 0.0 && c <= 360.0 { Some(c.round() as u16) } else { None }
+                    });
+                    let speed = speed_str.parse::<u16>().ok();
+
+                    if course.is_some() && speed.is_some() {
+                        position_comment.course = course;
+                        position_comment.speed = speed;
+                    } else {
+                        unparsed.push(part);
+                    }
+                } else {
+                    unparsed.push(part);
                 }
             // ... or a complete weather report: ccc/sss/XXX...
             // starting ccc/sss is now wind_direction and wind_speed
@@ -548,6 +567,11 @@ impl FromStr for AdsbEmitterCategory {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rust_decimal::prelude::*;
+    use super::*;
 
 #[test]
 fn test_flr() {
@@ -966,6 +990,25 @@ fn test_negative_altitude() {
 }
 
 #[test]
+fn test_decimal_course_parsing() {
+    let result = "166.56186289668/018/A=002753 !W64! id1E64020B +000fpm +0.0rot 0.0dB 0e +0.0kHz gps2x3"
+        .parse::<PositionComment>()
+        .unwrap();
+    assert_eq!(result.course, Some(167)); // 166.56186289668 rounded to 167
+    assert_eq!(result.speed, Some(18));
+    assert_eq!(result.altitude, Some(2753));
+    assert_eq!(result.additional_precision, Some(AdditionalPrecision { lat: 6, lon: 4 }));
+    assert_eq!(result.id.unwrap().address, 0x64020B);
+    assert_eq!(result.climb_rate, Some(0));
+    assert_eq!(result.turn_rate, Decimal::from_f32(0.0));
+    assert_eq!(result.signal_quality, Decimal::from_f32(0.0));
+    assert_eq!(result.error, Some(0));
+    assert_eq!(result.frequency_offset, Decimal::from_f32(0.0));
+    assert_eq!(result.gps_quality, Some("2x3".to_string()));
+    assert_eq!(result.unparsed, None);
+}
+
+#[test]
 fn test_geoid_offset() {
     // Test EGM96 format - positive offset
     let result1 = "EGM96:+52m"
@@ -1015,4 +1058,6 @@ fn test_geoid_offset() {
     assert_eq!(result7.geoid_offset, Some(100));
     assert_eq!(result7.crc_retry_count, Some(3));
     assert_eq!(result7.unparsed, None);
+}
+
 }

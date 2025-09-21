@@ -300,6 +300,7 @@ impl AprsData {
 mod tests {
     use super::*;
     use crate::Timestamp;
+    use rust_decimal::prelude::*;
 
     #[test]
     fn parse() {
@@ -564,6 +565,43 @@ mod tests {
                 assert_eq!(position.comment.altitude, Some(-6)); // Negative altitude!
                 assert_eq!(position.comment.climb_rate, Some(0));
                 assert_eq!(position.comment.gps_quality, Some("4x3".to_string()));
+                assert_eq!(position.comment.unparsed, None);
+            }
+            _ => panic!("Expected Position data type"),
+        }
+    }
+
+    #[test]
+    fn test_ognpur_decimal_course_packet() {
+        let result = r"PUR64020B>OGNPUR,qAS,PureTrk23:/142436h4546.60N/01146.10Eg166.56186289668/018/A=002753 !W64! id1E64020B +000fpm +0.0rot 0.0dB 0e +0.0kHz gps2x3"
+            .parse::<AprsPacket>()
+            .unwrap();
+
+        assert_eq!(result.from, Callsign::new("PUR64020B"));
+        assert_eq!(result.to, Callsign::new("OGNPUR"));
+        assert_eq!(result.data_source(), None); // OGNPUR is not a recognized data source
+        assert_eq!(
+            result.via,
+            vec![
+                Callsign::new("qAS"),
+                Callsign::new("PureTrk23")
+            ]
+        );
+
+        match result.data {
+            AprsData::Position(position) => {
+                assert_eq!(position.timestamp, Some(Timestamp::HHMMSS(14, 24, 36)));
+                assert_relative_eq!(*position.latitude, 45.77676666666667);
+                assert_relative_eq!(*position.longitude, 11.768400000000002);
+                assert_eq!(position.comment.course, Some(167)); // Decimal 166.56186289668 rounded to 167
+                assert_eq!(position.comment.speed, Some(18));
+                assert_eq!(position.comment.altitude, Some(2753));
+                assert_eq!(position.comment.climb_rate, Some(0));
+                assert_eq!(position.comment.turn_rate, Decimal::from_f32(0.0));
+                assert_eq!(position.comment.signal_quality, Decimal::from_f32(0.0));
+                assert_eq!(position.comment.error, Some(0));
+                assert_eq!(position.comment.frequency_offset, Decimal::from_f32(0.0));
+                assert_eq!(position.comment.gps_quality, Some("2x3".to_string()));
                 assert_eq!(position.comment.unparsed, None);
             }
             _ => panic!("Expected Position data type"),
