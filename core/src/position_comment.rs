@@ -104,10 +104,7 @@ impl FromStr for PositionComment {
             // ... or just the altitude: /A=aaaaaa
             // aaaaaa: altitude in feet (can be negative)
             // Handle this FIRST to avoid conflicts with flexible parsing
-            if idx == 0
-                && part.starts_with("/A=")
-                && position_comment.altitude.is_none()
-            {
+            if idx == 0 && part.starts_with("/A=") && position_comment.altitude.is_none() {
                 match part[3..].parse::<i32>().ok() {
                     Some(altitude) => position_comment.altitude = Some(altitude),
                     None => unparsed.push(part),
@@ -116,10 +113,7 @@ impl FromStr for PositionComment {
             // ccc: course in degrees 0-360 (can be decimal like 166.56186289668)
             // sss: speed in km/h
             // aaaaaa: altitude in feet (optional)
-            } else if idx == 0
-                && part.contains("/A=")
-                && position_comment.course.is_none()
-            {
+            } else if idx == 0 && part.contains("/A=") && position_comment.course.is_none() {
                 if let Some(altitude_pos) = part.find("/A=") {
                     let course_speed_part = &part[0..altitude_pos];
                     let altitude_part = &part[altitude_pos + 3..];
@@ -129,7 +123,11 @@ impl FromStr for PositionComment {
                         let speed_str = &course_speed_part[speed_pos + 1..];
 
                         let course = course_str.parse::<f32>().ok().and_then(|c| {
-                            if c >= 0.0 && c <= 360.0 { Some(c.round() as u16) } else { None }
+                            if c >= 0.0 && c <= 360.0 {
+                                Some(c.round() as u16)
+                            } else {
+                                None
+                            }
                         });
                         let speed = speed_str.parse::<u16>().ok();
                         let altitude = altitude_part.parse::<i32>().ok();
@@ -153,14 +151,19 @@ impl FromStr for PositionComment {
                 && part.contains('/')
                 && !part.contains("/A=")
                 && position_comment.course.is_none()
-                && !part.chars().any(|c| c.is_alphabetic()) // No letters (to avoid weather reports)
+                && !part.chars().any(|c| c.is_alphabetic())
+            // No letters (to avoid weather reports)
             {
                 if let Some(speed_pos) = part.rfind('/') {
                     let course_str = &part[0..speed_pos];
                     let speed_str = &part[speed_pos + 1..];
 
                     let course = course_str.parse::<f32>().ok().and_then(|c| {
-                        if c >= 0.0 && c <= 360.0 { Some(c.round() as u16) } else { None }
+                        if c >= 0.0 && c <= 360.0 {
+                            Some(c.round() as u16)
+                        } else {
+                            None
+                        }
                     });
                     let speed = speed_str.parse::<u16>().ok();
 
@@ -405,8 +408,9 @@ impl FromStr for PositionComment {
                 && position_comment.geoid_offset.is_none()
             {
                 let prefix_len = if part.starts_with("EGM96:") { 6 } else { 11 }; // "GeoidSepar:" is 11 chars
-                if part.len() >= prefix_len + 2 { // At least prefix + 1 digit + 'm'
-                    let offset_str = &part[prefix_len..part.len()-1]; // Remove prefix and "m" suffix
+                if part.len() >= prefix_len + 2 {
+                    // At least prefix + 1 digit + 'm'
+                    let offset_str = &part[prefix_len..part.len() - 1]; // Remove prefix and "m" suffix
                     if let Ok(offset) = offset_str.parse::<i16>() {
                         position_comment.geoid_offset = Some(offset);
                     } else {
@@ -424,11 +428,12 @@ impl FromStr for PositionComment {
             {
                 if let Some((category_part, identifier)) = part.split_once(':') {
                     // Check if it starts with "fn"
-                    let (category_str, has_fn_prefix) = if let Some(stripped) = category_part.strip_prefix("fn") {
-                        (stripped, true)
-                    } else {
-                        (category_part, false)
-                    };
+                    let (category_str, has_fn_prefix) =
+                        if let Some(stripped) = category_part.strip_prefix("fn") {
+                            (stripped, true)
+                        } else {
+                            (category_part, false)
+                        };
 
                     // Try to parse the emitter category
                     if let Ok(category) = category_str.parse::<AdsbEmitterCategory>() {
@@ -570,494 +575,501 @@ impl FromStr for AdsbEmitterCategory {
 
 #[cfg(test)]
 mod tests {
-    use rust_decimal::prelude::*;
     use super::*;
+    use rust_decimal::prelude::*;
 
-#[test]
-fn test_flr() {
-    let result = "255/045/A=003399 !W03! id06DDFAA3 -613fpm -3.9rot 22.5dB 7e -7.0kHz gps3x7 s7.07 h41 rD002F8".parse::<PositionComment>().unwrap();
-    assert_eq!(
-        result,
-        PositionComment {
-            course: Some(255),
-            speed: Some(45),
-            altitude: Some(3399),
-            additional_precision: Some(AdditionalPrecision { lat: 0, lon: 3 }),
-            id: Some(ID {
-                reserved: None,
-                address_type: 2,
-                aircraft_type: 1,
-                is_stealth: false,
-                is_notrack: false,
-                address: u32::from_str_radix("DDFAA3", 16).unwrap(),
-            }),
-            climb_rate: Some(-613),
-            turn_rate: Decimal::from_f32(-3.9),
-            signal_quality: Decimal::from_f32(22.5),
-            error: Some(7),
-            frequency_offset: Decimal::from_f32(-7.0),
-            gps_quality: Some("3x7".into()),
-            software_version: Decimal::from_f32(7.07),
-            hardware_version: Some(65),
-            original_address: u32::from_str_radix("D002F8", 16).ok(),
-            adsb_emitter_category: None,
-            flight_number: None,
-            call_sign: None,
-            squawk: None,
-            slot_frame: None,
-            crc_retry_count: None,
-            geoid_offset: None,
-            ..Default::default()
-        }
-    );
-}
+    #[test]
+    fn test_flr() {
+        let result = "255/045/A=003399 !W03! id06DDFAA3 -613fpm -3.9rot 22.5dB 7e -7.0kHz gps3x7 s7.07 h41 rD002F8".parse::<PositionComment>().unwrap();
+        assert_eq!(
+            result,
+            PositionComment {
+                course: Some(255),
+                speed: Some(45),
+                altitude: Some(3399),
+                additional_precision: Some(AdditionalPrecision { lat: 0, lon: 3 }),
+                id: Some(ID {
+                    reserved: None,
+                    address_type: 2,
+                    aircraft_type: 1,
+                    is_stealth: false,
+                    is_notrack: false,
+                    address: u32::from_str_radix("DDFAA3", 16).unwrap(),
+                }),
+                climb_rate: Some(-613),
+                turn_rate: Decimal::from_f32(-3.9),
+                signal_quality: Decimal::from_f32(22.5),
+                error: Some(7),
+                frequency_offset: Decimal::from_f32(-7.0),
+                gps_quality: Some("3x7".into()),
+                software_version: Decimal::from_f32(7.07),
+                hardware_version: Some(65),
+                original_address: u32::from_str_radix("D002F8", 16).ok(),
+                adsb_emitter_category: None,
+                flight_number: None,
+                call_sign: None,
+                squawk: None,
+                slot_frame: None,
+                crc_retry_count: None,
+                geoid_offset: None,
+                ..Default::default()
+            }
+        );
+    }
 
-#[test]
-fn test_trk() {
-    let result =
+    #[test]
+    fn test_trk() {
+        let result =
         "200/073/A=126433 !W05! id15B50BBB +4237fpm +2.2rot FL1267.81 10.0dB 19e +23.8kHz gps36x55"
             .parse::<PositionComment>()
             .unwrap();
-    assert_eq!(
-        result,
-        PositionComment {
-            course: Some(200),
-            speed: Some(73),
-            altitude: Some(126433),
-            wind_direction: None,
-            wind_speed: None,
-            gust: None,
-            temperature: None,
-            rainfall_1h: None,
-            rainfall_24h: None,
-            rainfall_midnight: None,
-            humidity: None,
-            barometric_pressure: None,
-            additional_precision: Some(AdditionalPrecision { lat: 0, lon: 5 }),
-            id: Some(ID {
-                address_type: 1,
-                aircraft_type: 5,
-                is_stealth: false,
-                is_notrack: false,
-                address: u32::from_str_radix("B50BBB", 16).unwrap(),
+        assert_eq!(
+            result,
+            PositionComment {
+                course: Some(200),
+                speed: Some(73),
+                altitude: Some(126433),
+                wind_direction: None,
+                wind_speed: None,
+                gust: None,
+                temperature: None,
+                rainfall_1h: None,
+                rainfall_24h: None,
+                rainfall_midnight: None,
+                humidity: None,
+                barometric_pressure: None,
+                additional_precision: Some(AdditionalPrecision { lat: 0, lon: 5 }),
+                id: Some(ID {
+                    address_type: 1,
+                    aircraft_type: 5,
+                    is_stealth: false,
+                    is_notrack: false,
+                    address: u32::from_str_radix("B50BBB", 16).unwrap(),
+                    ..Default::default()
+                }),
+                climb_rate: Some(4237),
+                turn_rate: Decimal::from_f32(2.2),
+                signal_quality: Decimal::from_f32(10.0),
+                error: Some(19),
+                frequency_offset: Decimal::from_f32(23.8),
+                gps_quality: Some("36x55".into()),
+                flight_level: Decimal::from_f32(1267.81),
+                signal_power: None,
+                software_version: None,
+                hardware_version: None,
+                original_address: None,
+                adsb_emitter_category: None,
+                flight_number: None,
+                call_sign: None,
+                squawk: None,
+                slot_frame: None,
+                crc_retry_count: None,
+                geoid_offset: None,
+                unparsed: None
+            }
+        );
+    }
+
+    #[test]
+    fn test_trk2() {
+        let result = "000/000/A=002280 !W59! id07395004 +000fpm +0.0rot FL021.72 40.2dB -15.1kHz gps9x13 +15.8dBm".parse::<PositionComment>().unwrap();
+        assert_eq!(
+            result,
+            PositionComment {
+                course: Some(0),
+                speed: Some(0),
+                altitude: Some(2280),
+                additional_precision: Some(AdditionalPrecision { lat: 5, lon: 9 }),
+                id: Some(ID {
+                    address_type: 3,
+                    aircraft_type: 1,
+                    is_stealth: false,
+                    is_notrack: false,
+                    address: u32::from_str_radix("395004", 16).unwrap(),
+                    ..Default::default()
+                }),
+                climb_rate: Some(0),
+                turn_rate: Decimal::from_f32(0.0),
+                signal_quality: Decimal::from_f32(40.2),
+                frequency_offset: Decimal::from_f32(-15.1),
+                gps_quality: Some("9x13".into()),
+                flight_level: Decimal::from_f32(21.72),
+                signal_power: Decimal::from_f32(15.8),
+                adsb_emitter_category: None,
+                flight_number: None,
+                call_sign: None,
+                squawk: None,
+                slot_frame: None,
+                crc_retry_count: None,
+                geoid_offset: None,
                 ..Default::default()
-            }),
-            climb_rate: Some(4237),
-            turn_rate: Decimal::from_f32(2.2),
-            signal_quality: Decimal::from_f32(10.0),
-            error: Some(19),
-            frequency_offset: Decimal::from_f32(23.8),
-            gps_quality: Some("36x55".into()),
-            flight_level: Decimal::from_f32(1267.81),
-            signal_power: None,
-            software_version: None,
-            hardware_version: None,
-            original_address: None,
-            adsb_emitter_category: None,
-            flight_number: None,
-            call_sign: None,
-            squawk: None,
-            slot_frame: None,
-            crc_retry_count: None,
-            geoid_offset: None,
-            unparsed: None
-        }
-    );
-}
+            }
+        );
+    }
 
-#[test]
-fn test_trk2() {
-    let result = "000/000/A=002280 !W59! id07395004 +000fpm +0.0rot FL021.72 40.2dB -15.1kHz gps9x13 +15.8dBm".parse::<PositionComment>().unwrap();
-    assert_eq!(
-        result,
-        PositionComment {
-            course: Some(0),
-            speed: Some(0),
-            altitude: Some(2280),
-            additional_precision: Some(AdditionalPrecision { lat: 5, lon: 9 }),
-            id: Some(ID {
-                address_type: 3,
-                aircraft_type: 1,
-                is_stealth: false,
-                is_notrack: false,
-                address: u32::from_str_radix("395004", 16).unwrap(),
+    #[test]
+    fn test_trk2_different_order() {
+        // Check if order doesn't matter
+        let result = "000/000/A=002280 !W59! -15.1kHz id07395004 +15.8dBm +0.0rot +000fpm FL021.72 40.2dB gps9x13".parse::<PositionComment>().unwrap();
+        assert_eq!(
+            result,
+            PositionComment {
+                course: Some(0),
+                speed: Some(0),
+                altitude: Some(2280),
+                additional_precision: Some(AdditionalPrecision { lat: 5, lon: 9 }),
+                id: Some(ID {
+                    address_type: 3,
+                    aircraft_type: 1,
+                    is_stealth: false,
+                    is_notrack: false,
+                    address: u32::from_str_radix("395004", 16).unwrap(),
+                    ..Default::default()
+                }),
+                climb_rate: Some(0),
+                turn_rate: Decimal::from_f32(0.0),
+                signal_quality: Decimal::from_f32(40.2),
+                frequency_offset: Decimal::from_f32(-15.1),
+                gps_quality: Some("9x13".into()),
+                flight_level: Decimal::from_f32(21.72),
+                signal_power: Decimal::from_f32(15.8),
+                adsb_emitter_category: None,
+                flight_number: None,
+                call_sign: None,
+                squawk: None,
+                slot_frame: None,
+                crc_retry_count: None,
+                geoid_offset: None,
                 ..Default::default()
-            }),
-            climb_rate: Some(0),
-            turn_rate: Decimal::from_f32(0.0),
-            signal_quality: Decimal::from_f32(40.2),
-            frequency_offset: Decimal::from_f32(-15.1),
-            gps_quality: Some("9x13".into()),
-            flight_level: Decimal::from_f32(21.72),
-            signal_power: Decimal::from_f32(15.8),
-            adsb_emitter_category: None,
-            flight_number: None,
-            call_sign: None,
-            squawk: None,
-            slot_frame: None,
-            crc_retry_count: None,
-            geoid_offset: None,
-            ..Default::default()
-        }
-    );
-}
+            }
+        );
+    }
 
-#[test]
-fn test_trk2_different_order() {
-    // Check if order doesn't matter
-    let result = "000/000/A=002280 !W59! -15.1kHz id07395004 +15.8dBm +0.0rot +000fpm FL021.72 40.2dB gps9x13".parse::<PositionComment>().unwrap();
-    assert_eq!(
-        result,
-        PositionComment {
-            course: Some(0),
-            speed: Some(0),
-            altitude: Some(2280),
-            additional_precision: Some(AdditionalPrecision { lat: 5, lon: 9 }),
-            id: Some(ID {
-                address_type: 3,
-                aircraft_type: 1,
-                is_stealth: false,
-                is_notrack: false,
-                address: u32::from_str_radix("395004", 16).unwrap(),
-                ..Default::default()
-            }),
-            climb_rate: Some(0),
-            turn_rate: Decimal::from_f32(0.0),
-            signal_quality: Decimal::from_f32(40.2),
-            frequency_offset: Decimal::from_f32(-15.1),
-            gps_quality: Some("9x13".into()),
-            flight_level: Decimal::from_f32(21.72),
-            signal_power: Decimal::from_f32(15.8),
-            adsb_emitter_category: None,
-            flight_number: None,
-            call_sign: None,
-            squawk: None,
-            slot_frame: None,
-            crc_retry_count: None,
-            geoid_offset: None,
-            ..Default::default()
-        }
-    );
-}
+    #[test]
+    fn test_bad_gps() {
+        let result = "208/063/A=003222 !W97! id06D017DC -395fpm -2.4rot 8.2dB -6.1kHz gps2xFLRD0"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result.frequency_offset, Decimal::from_f32(-6.1));
+        assert_eq!(result.gps_quality.is_some(), false);
+        assert_eq!(result.unparsed, Some("gps2xFLRD0".to_string()));
+    }
 
-#[test]
-fn test_bad_gps() {
-    let result = "208/063/A=003222 !W97! id06D017DC -395fpm -2.4rot 8.2dB -6.1kHz gps2xFLRD0"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result.frequency_offset, Decimal::from_f32(-6.1));
-    assert_eq!(result.gps_quality.is_some(), false);
-    assert_eq!(result.unparsed, Some("gps2xFLRD0".to_string()));
-}
+    #[test]
+    fn test_naviter_id() {
+        let result = "000/000/A=000000 !W0! id985F579BDF"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result.id.is_some(), true);
+        let id = result.id.unwrap();
 
-#[test]
-fn test_naviter_id() {
-    let result = "000/000/A=000000 !W0! id985F579BDF"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result.id.is_some(), true);
-    let id = result.id.unwrap();
+        assert_eq!(id.reserved, Some(15));
+        assert_eq!(id.address_type, 5);
+        assert_eq!(id.aircraft_type, 6);
+        assert_eq!(id.is_stealth, true);
+        assert_eq!(id.is_notrack, false);
+        assert_eq!(id.address, 0x579BDF);
+    }
 
-    assert_eq!(id.reserved, Some(15));
-    assert_eq!(id.address_type, 5);
-    assert_eq!(id.aircraft_type, 6);
-    assert_eq!(id.is_stealth, true);
-    assert_eq!(id.is_notrack, false);
-    assert_eq!(id.address, 0x579BDF);
-}
+    #[test]
+    fn parse_weather() {
+        let result = "187/004g007t075h78b63620"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result.wind_direction, Some(187));
+        assert_eq!(result.wind_speed, Some(4));
+        assert_eq!(result.gust, Some(7));
+        assert_eq!(result.temperature, Some(75));
+        assert_eq!(result.humidity, Some(78));
+        assert_eq!(result.barometric_pressure, Some(63620));
+    }
 
-#[test]
-fn parse_weather() {
-    let result = "187/004g007t075h78b63620"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result.wind_direction, Some(187));
-    assert_eq!(result.wind_speed, Some(4));
-    assert_eq!(result.gust, Some(7));
-    assert_eq!(result.temperature, Some(75));
-    assert_eq!(result.humidity, Some(78));
-    assert_eq!(result.barometric_pressure, Some(63620));
-}
+    #[test]
+    fn parse_weather_bad_type() {
+        let result = "187/004g007X075h78b63620"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(
+            result.unparsed,
+            Some("187/004g007X075h78b63620".to_string())
+        );
+    }
 
-#[test]
-fn parse_weather_bad_type() {
-    let result = "187/004g007X075h78b63620"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(
-        result.unparsed,
-        Some("187/004g007X075h78b63620".to_string())
-    );
-}
+    #[test]
+    fn parse_weather_duplicate_type() {
+        let result = "187/004g007t075g78b63620"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(
+            result.unparsed,
+            Some("187/004g007t075g78b63620".to_string())
+        );
+    }
 
-#[test]
-fn parse_weather_duplicate_type() {
-    let result = "187/004g007t075g78b63620"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(
-        result.unparsed,
-        Some("187/004g007t075g78b63620".to_string())
-    );
-}
+    #[test]
+    fn test_flight_number_with_fn_prefix() {
+        let result = "000/000/A=001000 fnA3:TW800"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result.adsb_emitter_category, Some(AdsbEmitterCategory::A3));
+        assert_eq!(result.flight_number, Some("TW800".to_string()));
+        assert_eq!(result.call_sign, Some("TW800".to_string()));
+    }
 
-#[test]
-fn test_flight_number_with_fn_prefix() {
-    let result = "000/000/A=001000 fnA3:TW800"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result.adsb_emitter_category, Some(AdsbEmitterCategory::A3));
-    assert_eq!(result.flight_number, Some("TW800".to_string()));
-    assert_eq!(result.call_sign, Some("TW800".to_string()));
-}
+    #[test]
+    fn test_flight_number_without_fn_prefix() {
+        let result = "000/000/A=001000 A2:RA135"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result.adsb_emitter_category, Some(AdsbEmitterCategory::A2));
+        assert_eq!(result.flight_number, None);
+        assert_eq!(result.call_sign, Some("RA135".to_string()));
+    }
 
-#[test]
-fn test_flight_number_without_fn_prefix() {
-    let result = "000/000/A=001000 A2:RA135"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result.adsb_emitter_category, Some(AdsbEmitterCategory::A2));
-    assert_eq!(result.flight_number, None);
-    assert_eq!(result.call_sign, Some("RA135".to_string()));
-}
+    #[test]
+    fn test_flight_number_different_categories() {
+        let result1 = "000/000/A=001000 B1:GLIDER1"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result1.adsb_emitter_category, Some(AdsbEmitterCategory::B1));
+        assert_eq!(result1.flight_number, None);
+        assert_eq!(result1.call_sign, Some("GLIDER1".to_string()));
 
-#[test]
-fn test_flight_number_different_categories() {
-    let result1 = "000/000/A=001000 B1:GLIDER1"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result1.adsb_emitter_category, Some(AdsbEmitterCategory::B1));
-    assert_eq!(result1.flight_number, None);
-    assert_eq!(result1.call_sign, Some("GLIDER1".to_string()));
+        let result2 = "000/000/A=001000 fnC2:SERVICE1"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result2.adsb_emitter_category, Some(AdsbEmitterCategory::C2));
+        assert_eq!(result2.flight_number, Some("SERVICE1".to_string()));
+        assert_eq!(result2.call_sign, Some("SERVICE1".to_string()));
+    }
 
-    let result2 = "000/000/A=001000 fnC2:SERVICE1"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result2.adsb_emitter_category, Some(AdsbEmitterCategory::C2));
-    assert_eq!(result2.flight_number, Some("SERVICE1".to_string()));
-    assert_eq!(result2.call_sign, Some("SERVICE1".to_string()));
-}
+    #[test]
+    fn test_flight_number_invalid_category() {
+        let result = "000/000/A=001000 fnZ9:INVALID"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result.adsb_emitter_category, None);
+        assert_eq!(result.flight_number, None);
+        assert_eq!(result.call_sign, None);
+        assert_eq!(result.unparsed, Some("fnZ9:INVALID".to_string()));
+    }
 
-#[test]
-fn test_flight_number_invalid_category() {
-    let result = "000/000/A=001000 fnZ9:INVALID"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result.adsb_emitter_category, None);
-    assert_eq!(result.flight_number, None);
-    assert_eq!(result.call_sign, None);
-    assert_eq!(result.unparsed, Some("fnZ9:INVALID".to_string()));
-}
+    #[test]
+    fn test_squawk_uppercase() {
+        let result = "000/000/A=001000 Sq1200"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result.squawk, Some("1200".to_string()));
+    }
 
-#[test]
-fn test_squawk_uppercase() {
-    let result = "000/000/A=001000 Sq1200"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result.squawk, Some("1200".to_string()));
-}
+    #[test]
+    fn test_squawk_lowercase() {
+        let result = "000/000/A=001000 sq7700"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result.squawk, Some("7700".to_string()));
+    }
 
-#[test]
-fn test_squawk_lowercase() {
-    let result = "000/000/A=001000 sq7700"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result.squawk, Some("7700".to_string()));
-}
+    #[test]
+    fn test_squawk_mixed_case() {
+        let result = "000/000/A=001000 SQ1234"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result.squawk, Some("1234".to_string()));
+    }
 
-#[test]
-fn test_squawk_mixed_case() {
-    let result = "000/000/A=001000 SQ1234"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result.squawk, Some("1234".to_string()));
-}
+    #[test]
+    fn test_squawk_invalid_length() {
+        let result = "000/000/A=001000 Sq123".parse::<PositionComment>().unwrap();
+        assert_eq!(result.squawk, None);
+        assert_eq!(result.unparsed, Some("Sq123".to_string()));
+    }
 
-#[test]
-fn test_squawk_invalid_length() {
-    let result = "000/000/A=001000 Sq123".parse::<PositionComment>().unwrap();
-    assert_eq!(result.squawk, None);
-    assert_eq!(result.unparsed, Some("Sq123".to_string()));
-}
+    #[test]
+    fn test_squawk_invalid_characters() {
+        let result = "000/000/A=001000 Sq12A3"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result.squawk, None);
+        assert_eq!(result.unparsed, Some("Sq12A3".to_string()));
+    }
 
-#[test]
-fn test_squawk_invalid_characters() {
-    let result = "000/000/A=001000 Sq12A3"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result.squawk, None);
-    assert_eq!(result.unparsed, Some("Sq12A3".to_string()));
-}
+    #[test]
+    fn test_call_sign_with_fn_prefix() {
+        let result = "000/000/A=001000 fnA1:ABC123"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result.adsb_emitter_category, Some(AdsbEmitterCategory::A1));
+        assert_eq!(result.flight_number, Some("ABC123".to_string()));
+        assert_eq!(result.call_sign, Some("ABC123".to_string()));
+    }
 
-#[test]
-fn test_call_sign_with_fn_prefix() {
-    let result = "000/000/A=001000 fnA1:ABC123"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result.adsb_emitter_category, Some(AdsbEmitterCategory::A1));
-    assert_eq!(result.flight_number, Some("ABC123".to_string()));
-    assert_eq!(result.call_sign, Some("ABC123".to_string()));
-}
+    #[test]
+    fn test_call_sign_without_fn_prefix() {
+        let result = "000/000/A=001000 B2:XYZ789"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result.adsb_emitter_category, Some(AdsbEmitterCategory::B2));
+        assert_eq!(result.flight_number, None);
+        assert_eq!(result.call_sign, Some("XYZ789".to_string()));
+    }
 
-#[test]
-fn test_call_sign_without_fn_prefix() {
-    let result = "000/000/A=001000 B2:XYZ789"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result.adsb_emitter_category, Some(AdsbEmitterCategory::B2));
-    assert_eq!(result.flight_number, None);
-    assert_eq!(result.call_sign, Some("XYZ789".to_string()));
-}
+    #[test]
+    fn test_comprehensive_call_sign_flight_number_behavior() {
+        // Test with fn prefix - both fields should be set
+        let with_fn = "000/000/A=001000 fnA3:FLIGHT1"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(with_fn.adsb_emitter_category, Some(AdsbEmitterCategory::A3));
+        assert_eq!(with_fn.flight_number, Some("FLIGHT1".to_string()));
+        assert_eq!(with_fn.call_sign, Some("FLIGHT1".to_string()));
 
-#[test]
-fn test_comprehensive_call_sign_flight_number_behavior() {
-    // Test with fn prefix - both fields should be set
-    let with_fn = "000/000/A=001000 fnA3:FLIGHT1"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(with_fn.adsb_emitter_category, Some(AdsbEmitterCategory::A3));
-    assert_eq!(with_fn.flight_number, Some("FLIGHT1".to_string()));
-    assert_eq!(with_fn.call_sign, Some("FLIGHT1".to_string()));
+        // Test without fn prefix - only call_sign should be set
+        let without_fn = "000/000/A=001000 A3:FLIGHT1"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(
+            without_fn.adsb_emitter_category,
+            Some(AdsbEmitterCategory::A3)
+        );
+        assert_eq!(without_fn.flight_number, None);
+        assert_eq!(without_fn.call_sign, Some("FLIGHT1".to_string()));
+    }
 
-    // Test without fn prefix - only call_sign should be set
-    let without_fn = "000/000/A=001000 A3:FLIGHT1"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(without_fn.adsb_emitter_category, Some(AdsbEmitterCategory::A3));
-    assert_eq!(without_fn.flight_number, None);
-    assert_eq!(without_fn.call_sign, Some("FLIGHT1".to_string()));
-}
+    #[test]
+    fn test_slot_frame_and_crc_retry() {
+        let result = "/203637h4638.64N/00738.79E_229/019g026t039 sF1 cr1 3.4dB +2.5kHz 5e"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result.slot_frame, Some(1));
+        assert_eq!(result.crc_retry_count, Some(1));
+        assert_eq!(result.signal_quality, Some(Decimal::from_f32(3.4).unwrap()));
+        assert_eq!(
+            result.frequency_offset,
+            Some(Decimal::from_f32(2.5).unwrap())
+        );
+        assert_eq!(result.error, Some(5));
+    }
 
-#[test]
-fn test_slot_frame_and_crc_retry() {
-    let result = "/203637h4638.64N/00738.79E_229/019g026t039 sF1 cr1 3.4dB +2.5kHz 5e"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result.slot_frame, Some(1));
-    assert_eq!(result.crc_retry_count, Some(1));
-    assert_eq!(result.signal_quality, Some(Decimal::from_f32(3.4).unwrap()));
-    assert_eq!(result.frequency_offset, Some(Decimal::from_f32(2.5).unwrap()));
-    assert_eq!(result.error, Some(5));
-}
+    #[test]
+    fn test_course_speed_without_altitude() {
+        let result = "000/000 !W90! id014A000A C2:FOLLOW1"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result.course, Some(0));
+        assert_eq!(result.speed, Some(0));
+        assert_eq!(result.altitude, None);
+        assert_eq!(
+            result.additional_precision,
+            Some(AdditionalPrecision { lat: 9, lon: 0 })
+        );
+        assert_eq!(result.id.unwrap().address, 0x4A000A);
+        assert_eq!(result.adsb_emitter_category, Some(AdsbEmitterCategory::C2));
+        assert_eq!(result.call_sign, Some("FOLLOW1".to_string()));
+        assert_eq!(result.unparsed, None);
 
-#[test]
-fn test_course_speed_without_altitude() {
-    let result = "000/000 !W90! id014A000A C2:FOLLOW1"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result.course, Some(0));
-    assert_eq!(result.speed, Some(0));
-    assert_eq!(result.altitude, None);
-    assert_eq!(result.additional_precision, Some(AdditionalPrecision { lat: 9, lon: 0 }));
-    assert_eq!(result.id.unwrap().address, 0x4A000A);
-    assert_eq!(result.adsb_emitter_category, Some(AdsbEmitterCategory::C2));
-    assert_eq!(result.call_sign, Some("FOLLOW1".to_string()));
-    assert_eq!(result.unparsed, None);
+        // Test with non-zero values
+        let result2 = "180/045 !W12!".parse::<PositionComment>().unwrap();
+        assert_eq!(result2.course, Some(180));
+        assert_eq!(result2.speed, Some(45));
+        assert_eq!(result2.altitude, None);
+        assert_eq!(
+            result2.additional_precision,
+            Some(AdditionalPrecision { lat: 1, lon: 2 })
+        );
+        assert_eq!(result2.unparsed, None);
+    }
 
-    // Test with non-zero values
-    let result2 = "180/045 !W12!"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result2.course, Some(180));
-    assert_eq!(result2.speed, Some(45));
-    assert_eq!(result2.altitude, None);
-    assert_eq!(result2.additional_precision, Some(AdditionalPrecision { lat: 1, lon: 2 }));
-    assert_eq!(result2.unparsed, None);
-}
+    #[test]
+    fn test_negative_altitude() {
+        let result = "288/044/A=-00006 !W25! id20F63E59 +000fpm gps4x3"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result.course, Some(288));
+        assert_eq!(result.speed, Some(44));
+        assert_eq!(result.altitude, Some(-6));
+        assert_eq!(
+            result.additional_precision,
+            Some(AdditionalPrecision { lat: 2, lon: 5 })
+        );
+        assert_eq!(result.id.unwrap().address, 0xF63E59);
+        assert_eq!(result.climb_rate, Some(0));
+        assert_eq!(result.gps_quality, Some("4x3".to_string()));
+        assert_eq!(result.unparsed, None);
 
-#[test]
-fn test_negative_altitude() {
-    let result = "288/044/A=-00006 !W25! id20F63E59 +000fpm gps4x3"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result.course, Some(288));
-    assert_eq!(result.speed, Some(44));
-    assert_eq!(result.altitude, Some(-6));
-    assert_eq!(result.additional_precision, Some(AdditionalPrecision { lat: 2, lon: 5 }));
-    assert_eq!(result.id.unwrap().address, 0xF63E59);
-    assert_eq!(result.climb_rate, Some(0));
-    assert_eq!(result.gps_quality, Some("4x3".to_string()));
-    assert_eq!(result.unparsed, None);
+        // Test altitude-only negative format
+        let result2 = "/A=-00123".parse::<PositionComment>().unwrap();
+        assert_eq!(result2.course, None);
+        assert_eq!(result2.speed, None);
+        assert_eq!(result2.altitude, Some(-123));
+        assert_eq!(result2.unparsed, None);
+    }
 
-    // Test altitude-only negative format
-    let result2 = "/A=-00123"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result2.course, None);
-    assert_eq!(result2.speed, None);
-    assert_eq!(result2.altitude, Some(-123));
-    assert_eq!(result2.unparsed, None);
-}
+    #[test]
+    fn test_decimal_course_parsing() {
+        let result =
+            "166.56186289668/018/A=002753 !W64! id1E64020B +000fpm +0.0rot 0.0dB 0e +0.0kHz gps2x3"
+                .parse::<PositionComment>()
+                .unwrap();
+        assert_eq!(result.course, Some(167)); // 166.56186289668 rounded to 167
+        assert_eq!(result.speed, Some(18));
+        assert_eq!(result.altitude, Some(2753));
+        assert_eq!(
+            result.additional_precision,
+            Some(AdditionalPrecision { lat: 6, lon: 4 })
+        );
+        assert_eq!(result.id.unwrap().address, 0x64020B);
+        assert_eq!(result.climb_rate, Some(0));
+        assert_eq!(result.turn_rate, Decimal::from_f32(0.0));
+        assert_eq!(result.signal_quality, Decimal::from_f32(0.0));
+        assert_eq!(result.error, Some(0));
+        assert_eq!(result.frequency_offset, Decimal::from_f32(0.0));
+        assert_eq!(result.gps_quality, Some("2x3".to_string()));
+        assert_eq!(result.unparsed, None);
+    }
 
-#[test]
-fn test_decimal_course_parsing() {
-    let result = "166.56186289668/018/A=002753 !W64! id1E64020B +000fpm +0.0rot 0.0dB 0e +0.0kHz gps2x3"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result.course, Some(167)); // 166.56186289668 rounded to 167
-    assert_eq!(result.speed, Some(18));
-    assert_eq!(result.altitude, Some(2753));
-    assert_eq!(result.additional_precision, Some(AdditionalPrecision { lat: 6, lon: 4 }));
-    assert_eq!(result.id.unwrap().address, 0x64020B);
-    assert_eq!(result.climb_rate, Some(0));
-    assert_eq!(result.turn_rate, Decimal::from_f32(0.0));
-    assert_eq!(result.signal_quality, Decimal::from_f32(0.0));
-    assert_eq!(result.error, Some(0));
-    assert_eq!(result.frequency_offset, Decimal::from_f32(0.0));
-    assert_eq!(result.gps_quality, Some("2x3".to_string()));
-    assert_eq!(result.unparsed, None);
-}
+    #[test]
+    fn test_geoid_offset() {
+        // Test EGM96 format - positive offset
+        let result1 = "EGM96:+52m".parse::<PositionComment>().unwrap();
+        assert_eq!(result1.geoid_offset, Some(52));
 
-#[test]
-fn test_geoid_offset() {
-    // Test EGM96 format - positive offset
-    let result1 = "EGM96:+52m"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result1.geoid_offset, Some(52));
-    
-    // Test EGM96 format - negative offset
-    let result2 = "EGM96:-15m"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result2.geoid_offset, Some(-15));
-    
-    // Test EGM96 format - zero offset
-    let result3 = "EGM96:0m"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result3.geoid_offset, Some(0));
-    
-    // Test GeoidSepar format - positive offset
-    let result4 = "GeoidSepar:+41m"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result4.geoid_offset, Some(41));
-    
-    // Test GeoidSepar format - negative offset
-    let result5 = "GeoidSepar:-25m"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result5.geoid_offset, Some(-25));
-    
-    // Test with other fields
-    let result6 = "sF1 cr1 EGM96:+52m 3.4dB"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result6.slot_frame, Some(1));
-    assert_eq!(result6.crc_retry_count, Some(1));
-    assert_eq!(result6.geoid_offset, Some(52));
-    assert_eq!(result6.signal_quality, Some(Decimal::from_f32(3.4).unwrap()));
-    assert_eq!(result6.unparsed, None);
-    
-    // Test GeoidSepar with other fields
-    let result7 = "sF2 GeoidSepar:+100m cr3"
-        .parse::<PositionComment>()
-        .unwrap();
-    assert_eq!(result7.slot_frame, Some(2));
-    assert_eq!(result7.geoid_offset, Some(100));
-    assert_eq!(result7.crc_retry_count, Some(3));
-    assert_eq!(result7.unparsed, None);
-}
+        // Test EGM96 format - negative offset
+        let result2 = "EGM96:-15m".parse::<PositionComment>().unwrap();
+        assert_eq!(result2.geoid_offset, Some(-15));
 
+        // Test EGM96 format - zero offset
+        let result3 = "EGM96:0m".parse::<PositionComment>().unwrap();
+        assert_eq!(result3.geoid_offset, Some(0));
+
+        // Test GeoidSepar format - positive offset
+        let result4 = "GeoidSepar:+41m".parse::<PositionComment>().unwrap();
+        assert_eq!(result4.geoid_offset, Some(41));
+
+        // Test GeoidSepar format - negative offset
+        let result5 = "GeoidSepar:-25m".parse::<PositionComment>().unwrap();
+        assert_eq!(result5.geoid_offset, Some(-25));
+
+        // Test with other fields
+        let result6 = "sF1 cr1 EGM96:+52m 3.4dB"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result6.slot_frame, Some(1));
+        assert_eq!(result6.crc_retry_count, Some(1));
+        assert_eq!(result6.geoid_offset, Some(52));
+        assert_eq!(
+            result6.signal_quality,
+            Some(Decimal::from_f32(3.4).unwrap())
+        );
+        assert_eq!(result6.unparsed, None);
+
+        // Test GeoidSepar with other fields
+        let result7 = "sF2 GeoidSepar:+100m cr3"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result7.slot_frame, Some(2));
+        assert_eq!(result7.geoid_offset, Some(100));
+        assert_eq!(result7.crc_retry_count, Some(3));
+        assert_eq!(result7.unparsed, None);
+    }
 }

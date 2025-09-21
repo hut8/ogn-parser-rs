@@ -481,31 +481,36 @@ mod tests {
     #[test]
     fn test_device_type_method() {
         // Test with known data sources
-        let packet_ognflr = "ICA3D17F2>OGNFLR,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054"
-            .parse::<AprsPacket>()
-            .unwrap();
+        let packet_ognflr =
+            "ICA3D17F2>OGNFLR,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054"
+                .parse::<AprsPacket>()
+                .unwrap();
         assert_eq!(packet_ognflr.data_source(), Some(DataSource::OgnFlr));
 
-        let packet_ogadsb = "ICA3D17F2>OGADSB,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054"
-            .parse::<AprsPacket>()
-            .unwrap();
+        let packet_ogadsb =
+            "ICA3D17F2>OGADSB,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054"
+                .parse::<AprsPacket>()
+                .unwrap();
         assert_eq!(packet_ogadsb.data_source(), Some(DataSource::OgAdsb));
 
-        let packet_fxcapp = "ICA3D17F2>FXCAPP,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054"
-            .parse::<AprsPacket>()
-            .unwrap();
+        let packet_fxcapp =
+            "ICA3D17F2>FXCAPP,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054"
+                .parse::<AprsPacket>()
+                .unwrap();
         assert_eq!(packet_fxcapp.data_source(), Some(DataSource::FxcApp));
 
         // Test with unknown data source
-        let packet_unknown = "ICA3D17F2>APRS,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054"
-            .parse::<AprsPacket>()
-            .unwrap();
+        let packet_unknown =
+            "ICA3D17F2>APRS,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054"
+                .parse::<AprsPacket>()
+                .unwrap();
         assert_eq!(packet_unknown.data_source(), None);
 
         // Test with completely unknown TO field
-        let packet_custom = "ICA3D17F2>CUSTOM123,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054"
-            .parse::<AprsPacket>()
-            .unwrap();
+        let packet_custom =
+            "ICA3D17F2>CUSTOM123,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054"
+                .parse::<AprsPacket>()
+                .unwrap();
         assert_eq!(packet_custom.data_source(), None);
     }
 
@@ -549,10 +554,7 @@ mod tests {
         assert_eq!(result.data_source(), Some(DataSource::OgnSky));
         assert_eq!(
             result.via,
-            vec![
-                Callsign::new("qAS"),
-                Callsign::new("SafeSky")
-            ]
+            vec![Callsign::new("qAS"), Callsign::new("SafeSky")]
         );
 
         match result.data {
@@ -582,10 +584,7 @@ mod tests {
         assert_eq!(result.data_source(), None); // OGNPUR is not a recognized data source
         assert_eq!(
             result.via,
-            vec![
-                Callsign::new("qAS"),
-                Callsign::new("PureTrk23")
-            ]
+            vec![Callsign::new("qAS"), Callsign::new("PureTrk23")]
         );
 
         match result.data {
@@ -612,19 +611,48 @@ mod tests {
     fn test_device_type_comprehensive() {
         // Demonstrate the comprehensive functionality with various data sources
         let test_packets = vec![
-            ("ICA3D17F2>OGNFLR,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054", Some(DataSource::OgnFlr)),
-            ("ICA3D17F2>OGFLR6,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054", Some(DataSource::OgFlr6)),
-            ("ICA3D17F2>OGADSB,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054", Some(DataSource::OgAdsb)),
-            ("ICA3D17F2>OGNTRK,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054", Some(DataSource::OgnTrk)),
-            ("ICA3D17F2>FXCAPP,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054", Some(DataSource::FxcApp)),
-            ("ICA3D17F2>OGNVOL,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054", Some(DataSource::OgnVol)),
-            ("ICA3D17F2>APRS,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054", None),
-            ("ICA3D17F2>UNKNOWN,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054", None),
+            (
+                "ICA3D17F2>OGNFLR,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054",
+                Some(DataSource::OgnFlr),
+            ),
+            (
+                "ICA3D17F2>OGFLR6,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054",
+                Some(DataSource::OgFlr6),
+            ),
+            (
+                "ICA3D17F2>OGADSB,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054",
+                Some(DataSource::OgAdsb),
+            ),
+            (
+                "ICA3D17F2>OGNTRK,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054",
+                Some(DataSource::OgnTrk),
+            ),
+            (
+                "ICA3D17F2>FXCAPP,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054",
+                Some(DataSource::FxcApp),
+            ),
+            (
+                "ICA3D17F2>OGNVOL,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054",
+                Some(DataSource::OgnVol),
+            ),
+            (
+                "ICA3D17F2>APRS,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054",
+                None,
+            ),
+            (
+                "ICA3D17F2>UNKNOWN,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054",
+                None,
+            ),
         ];
 
         for (packet_str, expected) in test_packets {
             let packet = packet_str.parse::<AprsPacket>().unwrap();
-            assert_eq!(packet.data_source(), expected, "Failed for packet with TO field: {}", packet.to);
+            assert_eq!(
+                packet.data_source(),
+                expected,
+                "Failed for packet with TO field: {}",
+                packet.to
+            );
         }
     }
 }
