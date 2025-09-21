@@ -53,6 +53,10 @@ pub struct StatusComment {
     /// at this location to get altitude above mean sea level.
     pub geoid_offset: Option<i16>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub signal_strength_db: Option<Decimal>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub unparsed: Option<String>,
 }
 
@@ -268,8 +272,9 @@ impl FromStr for StatusComment {
                 && status_comment.geoid_offset.is_none()
             {
                 let prefix_len = if part.starts_with("EGM96:") { 6 } else { 11 }; // "GeoidSepar:" is 11 chars
-                if part.len() >= prefix_len + 2 { // At least prefix + 1 digit + 'm'
-                    let offset_str = &part[prefix_len..part.len()-1]; // Remove prefix and "m" suffix
+                if part.len() >= prefix_len + 2 {
+                    // At least prefix + 1 digit + 'm'
+                    let offset_str = &part[prefix_len..part.len() - 1]; // Remove prefix and "m" suffix
                     if let Ok(offset) = offset_str.parse::<i16>() {
                         status_comment.geoid_offset = Some(offset);
                     } else {
@@ -278,6 +283,13 @@ impl FromStr for StatusComment {
                 } else {
                     unparsed.push(part);
                 }
+            // name field: Name="XXX"
+            } else if part.starts_with("Name=\"")
+                && part.ends_with('"')
+                && status_comment.name.is_none()
+            {
+                let name = &part[6..part.len() - 1]; // Remove 'Name="' and '"'
+                status_comment.name = Some(name.to_string());
             } else if let Some((value, unit)) = split_value_unit(part) {
                 // cpu temperature: +x.xC
                 // x.x: cpu temperature in [°C]
@@ -292,6 +304,11 @@ impl FromStr for StatusComment {
                 // x.x: currency in [A]
                 } else if unit == "A" && status_comment.amperage.is_none() {
                     status_comment.amperage = value.parse::<f32>().ok().and_then(Decimal::from_f32);
+                // signal strength: x.xdB
+                // x.x: signal strength in [dB]
+                } else if unit == "dB" && status_comment.signal_strength_db.is_none() {
+                    status_comment.signal_strength_db =
+                        value.parse::<f32>().ok().and_then(Decimal::from_f32);
                 } else {
                     unparsed.push(part);
                 }
@@ -437,7 +454,7 @@ mod tests {
                 good_senders: Some(1),
                 good_and_bad_senders: Some(2),
                 geoid_offset: Some(49),
-                unparsed: None,
+                ..Default::default()
             }
         );
     }
@@ -445,27 +462,19 @@ mod tests {
     #[test]
     fn test_geoid_offset_formats() {
         // Test EGM96 format - positive offset
-        let result1 = "EGM96:+52m"
-            .parse::<StatusComment>()
-            .unwrap();
+        let result1 = "EGM96:+52m".parse::<StatusComment>().unwrap();
         assert_eq!(result1.geoid_offset, Some(52));
 
         // Test EGM96 format - negative offset
-        let result2 = "EGM96:-15m"
-            .parse::<StatusComment>()
-            .unwrap();
+        let result2 = "EGM96:-15m".parse::<StatusComment>().unwrap();
         assert_eq!(result2.geoid_offset, Some(-15));
 
         // Test GeoidSepar format - positive offset
-        let result3 = "GeoidSepar:+41m"
-            .parse::<StatusComment>()
-            .unwrap();
+        let result3 = "GeoidSepar:+41m".parse::<StatusComment>().unwrap();
         assert_eq!(result3.geoid_offset, Some(41));
 
         // Test GeoidSepar format - negative offset
-        let result4 = "GeoidSepar:-25m"
-            .parse::<StatusComment>()
-            .unwrap();
+        let result4 = "GeoidSepar:-25m".parse::<StatusComment>().unwrap();
         assert_eq!(result4.geoid_offset, Some(-25));
     }
 
@@ -489,5 +498,19 @@ mod tests {
                 ..Default::default()
             }
         )
+    }
+
+    #[test]
+    fn test_name_and_signal_strength() {
+        let result = r#"164415h Name="Kourarau" 3.7dB"#.parse::<StatusComment>().unwrap();
+        assert_eq!(
+            result,
+            StatusComment {
+                name: Some("Kourarau".to_string()),
+                signal_strength_db: Decimal::from_f32(3.7),
+                unparsed: Some("164415h".to_string()),
+                ..Default::default()
+            }
+        );
     }
 }
