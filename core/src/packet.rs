@@ -238,6 +238,14 @@ impl FromStr for AprsPacket {
 }
 
 impl AprsPacket {
+    /// Get the source type based on the via field and packet type
+    pub fn position_source_type(&self) -> crate::position::PositionSourceType {
+        match &self.data {
+            AprsData::Position(_) => crate::position::PositionSourceType::from_via(&self.via),
+            _ => crate::position::PositionSourceType::NotPosition,
+        }
+    }
+
     pub fn encode<W: Write>(&self, buf: &mut W) -> Result<(), EncodeError> {
         write!(buf, "{}>{}", self.from, self.to)?;
         for v in &self.via {
@@ -605,6 +613,50 @@ mod tests {
             }
             _ => panic!("Expected Position data type"),
         }
+    }
+
+    #[test]
+    fn test_position_source_type() {
+        use crate::position::PositionSourceType;
+
+        // Test receiver packet
+        let receiver_packet =
+            "AVX1053>OGNSDR,TCPIP*,qAC,GLIDERN3:/190916h6022.40NI00512.27E&/A=000049"
+                .parse::<AprsPacket>()
+                .unwrap();
+        assert_eq!(
+            receiver_packet.position_source_type(),
+            PositionSourceType::Receiver
+        );
+
+        // Test aircraft packet
+        let aircraft_packet =
+            "ICA3D17F2>APRS,qAS,dl4mea:/074849h4821.61N\\01224.49E^322/103/A=003054"
+                .parse::<AprsPacket>()
+                .unwrap();
+        assert_eq!(
+            aircraft_packet.position_source_type(),
+            PositionSourceType::Aircraft
+        );
+
+        // Test unknown packet
+        let unknown_packet =
+            "TEST123>APRS,WIDE1-1,WIDE2-1:/074849h4821.61N\\01224.49E^322/103/A=003054"
+                .parse::<AprsPacket>()
+                .unwrap();
+        assert_eq!(
+            unknown_packet.position_source_type(),
+            PositionSourceType::Unknown
+        );
+
+        // Test non-position packet
+        let status_packet = "TEST123>APRS,WIDE1-1:>Status message"
+            .parse::<AprsPacket>()
+            .unwrap();
+        assert_eq!(
+            status_packet.position_source_type(),
+            PositionSourceType::NotPosition
+        );
     }
 
     #[test]

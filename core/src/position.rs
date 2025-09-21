@@ -5,6 +5,7 @@ use flat_projection::FlatProjection;
 use serde::Serialize;
 
 use crate::AprsError;
+use crate::Callsign;
 use crate::EncodeError;
 use crate::Timestamp;
 use crate::lonlat::{Latitude, Longitude, encode_latitude, encode_longitude};
@@ -13,6 +14,36 @@ use crate::position_comment::PositionComment;
 pub struct Relation {
     pub bearing: f64,
     pub distance: f64,
+}
+
+/// Type of position source based on the via field
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub enum PositionSourceType {
+    /// Position from a ground-based receiver (contains TCPIP* and qAC in via)
+    Receiver,
+    /// Position from an aircraft (contains qAS in via)
+    Aircraft,
+    /// Unknown source type
+    Unknown,
+    /// Not a position packet
+    NotPosition,
+}
+
+impl PositionSourceType {
+    /// Determine the source type based on the via field of an APRS packet
+    pub fn from_via(via: &[Callsign]) -> Self {
+        let has_tcpip = via.iter().any(|callsign| callsign.0.starts_with("TCPIP"));
+        let has_qac = via.iter().any(|callsign| callsign.0 == "qAC");
+        let has_qas = via.iter().any(|callsign| callsign.0 == "qAS");
+
+        if has_tcpip && has_qac {
+            PositionSourceType::Receiver
+        } else if has_qas {
+            PositionSourceType::Aircraft
+        } else {
+            PositionSourceType::Unknown
+        }
+    }
 }
 
 #[derive(PartialEq, Debug, Clone, Serialize)]

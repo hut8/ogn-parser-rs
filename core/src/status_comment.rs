@@ -534,7 +534,9 @@ mod tests {
 
     #[test]
     fn test_ognr_pilotaware_version() {
-        let result = "171525h v20250625 OGN-R/PilotAware".parse::<StatusComment>().unwrap();
+        let result = "171525h v20250625 OGN-R/PilotAware"
+            .parse::<StatusComment>()
+            .unwrap();
         assert_eq!(
             result,
             StatusComment {

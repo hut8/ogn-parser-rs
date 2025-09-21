@@ -74,7 +74,7 @@ pub use error::{AprsError, EncodeError};
 pub use lonlat::{Latitude, Longitude};
 pub use message::AprsMessage;
 pub use packet::{AprsData, AprsPacket, DataSource};
-pub use position::AprsPosition;
+pub use position::{AprsPosition, PositionSourceType};
 pub use position_comment::{AdditionalPrecision, ID, PositionComment};
 pub use server_comment::ServerComment;
 pub use server_response::ServerResponse;
