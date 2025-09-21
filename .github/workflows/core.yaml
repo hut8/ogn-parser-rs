@@ -45,18 +45,18 @@ jobs:
       - run: rustup component add clippy
       - run: cargo clippy --all-targets --all-features -- -D warnings
 
-  release:
-    name: release
-    runs-on: ubuntu-latest
-    needs: [tests, fmt, clippy]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: katyo/publish-crates@v2
-        with:
-          path: './core'
-          registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+#   release:
+#     name: release
+#     runs-on: ubuntu-latest
+#     needs: [tests, fmt, clippy]
+#     steps:
+#       - uses: actions/checkout@v4
+#       - name: Set up Rust
+#         uses: actions-rs/toolchain@v1
+#         with:
+#           toolchain: stable
+#           override: true
+#       - uses: katyo/publish-crates@v2
+#         with:
+#           path: './core'
+#           registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
