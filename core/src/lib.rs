@@ -63,6 +63,7 @@ mod server_comment;
 mod server_response;
 mod status;
 mod status_comment;
+mod symbols;
 mod timestamp;
 mod utils;
 
@@ -80,6 +81,7 @@ pub use server_comment::ServerComment;
 pub use server_response::ServerResponse;
 pub use status::AprsStatus;
 pub use status_comment::StatusComment;
+pub use symbols::AprsSymbol;
 pub use timestamp::Timestamp;
 
 pub fn parse(s: &str) -> Result<AprsPacket, AprsError> {
