@@ -64,6 +64,18 @@ impl FromStr for AprsMessage {
     }
 }
 
+impl Display for AprsMessage {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, ":{: <9}:{}", self.addressee, self.text)?;
+
+        if let Some(id) = self.id {
+            write!(f, "{{{id}")?;
+        }
+
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -88,17 +100,5 @@ mod tests {
             result,
             Err(AprsError::InvalidMessageId("329754".to_string()))
         );
-    }
-}
-
-impl Display for AprsMessage {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, ":{: <9}:{}", self.addressee, self.text)?;
-
-        if let Some(id) = self.id {
-            write!(f, "{{{id}")?;
-        }
-
-        Ok(())
     }
 }

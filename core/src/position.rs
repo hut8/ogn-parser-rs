@@ -136,7 +136,7 @@ mod tests {
     fn parse_without_timestamp_or_messaging() {
         let result = r"!4903.50N/07201.75W-".parse::<AprsPosition>().unwrap();
         assert_eq!(result.timestamp, None);
-        assert_eq!(result.messaging_supported, false);
+        assert!(!result.messaging_supported);
         assert_relative_eq!(*result.latitude, 49.05833333333333);
         assert_relative_eq!(*result.longitude, -72.02916666666667);
         assert_eq!(result.symbol_table, '/');
@@ -163,12 +163,12 @@ mod tests {
             .parse::<AprsPosition>()
             .unwrap();
         assert_eq!(result.timestamp, Some(Timestamp::HHMMSS(7, 48, 49)));
-        assert_eq!(result.messaging_supported, false);
+        assert!(!result.messaging_supported);
         assert_relative_eq!(*result.latitude, 48.36016666666667);
         assert_relative_eq!(*result.longitude, 12.408166666666666);
         assert_eq!(result.symbol_table, '\\');
         assert_eq!(result.symbol_code, '^');
-        assert_eq!(result.comment.altitude.unwrap(), 003054);
+        assert_eq!(result.comment.altitude.unwrap(), 3054);
         assert_eq!(result.comment.course.unwrap(), 322);
         assert_eq!(result.comment.speed.unwrap(), 103);
     }
@@ -177,7 +177,7 @@ mod tests {
     fn parse_without_timestamp_with_messaging() {
         let result = r"=4903.50N/07201.75W-".parse::<AprsPosition>().unwrap();
         assert_eq!(result.timestamp, None);
-        assert_eq!(result.messaging_supported, true);
+        assert!(result.messaging_supported);
         assert_relative_eq!(*result.latitude, 49.05833333333333);
         assert_relative_eq!(*result.longitude, -72.02916666666667);
         assert_eq!(result.symbol_table, '/');
@@ -191,12 +191,12 @@ mod tests {
             .parse::<AprsPosition>()
             .unwrap();
         assert_eq!(result.timestamp, Some(Timestamp::HHMMSS(7, 48, 49)));
-        assert_eq!(result.messaging_supported, true);
+        assert!(result.messaging_supported);
         assert_relative_eq!(*result.latitude, 48.36016666666667);
         assert_relative_eq!(*result.longitude, 12.408166666666666);
         assert_eq!(result.symbol_table, '\\');
         assert_eq!(result.symbol_code, '^');
-        assert_eq!(result.comment.altitude.unwrap(), 003054);
+        assert_eq!(result.comment.altitude.unwrap(), 3054);
         assert_eq!(result.comment.course.unwrap(), 322);
         assert_eq!(result.comment.speed.unwrap(), 103);
     }

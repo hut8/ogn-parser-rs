@@ -576,7 +576,6 @@ impl FromStr for AdsbEmitterCategory {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rust_decimal::prelude::*;
 
     #[test]
     fn test_flr() {
@@ -751,7 +750,7 @@ mod tests {
             .parse::<PositionComment>()
             .unwrap();
         assert_eq!(result.frequency_offset, Decimal::from_f32(-6.1));
-        assert_eq!(result.gps_quality.is_some(), false);
+        assert!(result.gps_quality.is_none());
         assert_eq!(result.unparsed, Some("gps2xFLRD0".to_string()));
     }
 
@@ -760,14 +759,14 @@ mod tests {
         let result = "000/000/A=000000 !W0! id985F579BDF"
             .parse::<PositionComment>()
             .unwrap();
-        assert_eq!(result.id.is_some(), true);
+        assert!(result.id.is_some());
         let id = result.id.unwrap();
 
         assert_eq!(id.reserved, Some(15));
         assert_eq!(id.address_type, 5);
         assert_eq!(id.aircraft_type, 6);
-        assert_eq!(id.is_stealth, true);
-        assert_eq!(id.is_notrack, false);
+        assert!(id.is_stealth);
+        assert!(!id.is_notrack);
         assert_eq!(id.address, 0x579BDF);
     }
 
