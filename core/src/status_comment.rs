@@ -520,13 +520,12 @@ mod tests {
 
     #[test]
     fn test_name_and_demodulation_snr() {
-        let result = r#"164415h Name="Kourarau" 3.7dB"#.parse::<StatusComment>().unwrap();
+        let result = r#"Name="Kourarau" 3.7dB"#.parse::<StatusComment>().unwrap();
         assert_eq!(
             result,
             StatusComment {
                 name: Some("Kourarau".to_string()),
                 demodulation_snr_db: Decimal::from_f32(3.7),
-                unparsed: Some("164415h".to_string()),
                 ..Default::default()
             }
         );
@@ -534,14 +533,13 @@ mod tests {
 
     #[test]
     fn test_ognr_pilotaware_version() {
-        let result = "171525h v20250625 OGN-R/PilotAware"
+        let result = "v20250625 OGN-R/PilotAware"
             .parse::<StatusComment>()
             .unwrap();
         assert_eq!(
             result,
             StatusComment {
                 ognr_pilotaware_version: Some("20250625".to_string()),
-                unparsed: Some("171525h".to_string()),
                 ..Default::default()
             }
         );
