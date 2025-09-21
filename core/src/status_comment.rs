@@ -55,7 +55,9 @@ pub struct StatusComment {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub signal_strength_db: Option<Decimal>,
+    pub demodulation_snr_db: Option<Decimal>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ognr_pilotaware_version: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub unparsed: Option<String>,
 }
@@ -67,7 +69,10 @@ impl FromStr for StatusComment {
             ..Default::default()
         };
         let mut unparsed: Vec<_> = vec![];
-        for part in s.split_whitespace() {
+        let parts: Vec<&str> = s.split_whitespace().collect();
+        let mut i = 0;
+        while i < parts.len() {
+            let part = parts[i];
             // receiver software version: vX.Y.Z
             // X (major)
             // Y (minor)
@@ -83,6 +88,18 @@ impl FromStr for StatusComment {
                     .unwrap();
                 status_comment.version = Some(first[1..].into());
                 status_comment.platform = Some(second[1..].into());
+
+            // OGN-R/PilotAware version: vYYYYMMDD OGN-R/PilotAware
+            // YYYYMMDD: date in format YYYYMMDD
+            } else if part.len() == 9
+                && part.starts_with('v')
+                && part[1..].chars().all(|c| c.is_ascii_digit())
+                && status_comment.ognr_pilotaware_version.is_none()
+                && i + 1 < parts.len()
+                && parts[i + 1] == "OGN-R/PilotAware"
+            {
+                status_comment.ognr_pilotaware_version = Some(part[1..].to_string());
+                i += 1; // Skip the "OGN-R/PilotAware" part
 
             // cpu load: CPU:x.x
             // x.x: cpu load as percentage
@@ -304,10 +321,10 @@ impl FromStr for StatusComment {
                 // x.x: currency in [A]
                 } else if unit == "A" && status_comment.amperage.is_none() {
                     status_comment.amperage = value.parse::<f32>().ok().and_then(Decimal::from_f32);
-                // signal strength: x.xdB
-                // x.x: signal strength in [dB]
-                } else if unit == "dB" && status_comment.signal_strength_db.is_none() {
-                    status_comment.signal_strength_db =
+                // demodulation SNR: x.xdB
+                // x.x: demodulation SNR in [dB]
+                } else if unit == "dB" && status_comment.demodulation_snr_db.is_none() {
+                    status_comment.demodulation_snr_db =
                         value.parse::<f32>().ok().and_then(Decimal::from_f32);
                 } else {
                     unparsed.push(part);
@@ -315,6 +332,7 @@ impl FromStr for StatusComment {
             } else {
                 unparsed.push(part);
             }
+            i += 1;
         }
         status_comment.unparsed = if !unparsed.is_empty() {
             Some(unparsed.join(" "))
@@ -501,14 +519,27 @@ mod tests {
     }
 
     #[test]
-    fn test_name_and_signal_strength() {
+    fn test_name_and_demodulation_snr() {
         let result = r#"164415h Name="Kourarau" 3.7dB"#.parse::<StatusComment>().unwrap();
         assert_eq!(
             result,
             StatusComment {
                 name: Some("Kourarau".to_string()),
-                signal_strength_db: Decimal::from_f32(3.7),
+                demodulation_snr_db: Decimal::from_f32(3.7),
                 unparsed: Some("164415h".to_string()),
+                ..Default::default()
+            }
+        );
+    }
+
+    #[test]
+    fn test_ognr_pilotaware_version() {
+        let result = "171525h v20250625 OGN-R/PilotAware".parse::<StatusComment>().unwrap();
+        assert_eq!(
+            result,
+            StatusComment {
+                ognr_pilotaware_version: Some("20250625".to_string()),
+                unparsed: Some("171525h".to_string()),
                 ..Default::default()
             }
         );
