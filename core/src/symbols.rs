@@ -67,7 +67,7 @@ pub enum AprsSymbol {
     TriangleDfStation,     // /\ HT
     MailPostOffice,        // /] HU
     LargeAircraft,         // /^ HV
-    WeatherStationBlue,    // /_ HW
+    WeatherStation,        // /_ HW
     DishAntenna,           // /` HX
     Ambulance,             // /a LA
     Bike,                  // /b LB
@@ -206,7 +206,7 @@ impl AprsSymbol {
     ///
     /// # Example
     /// ```
-    /// use ogn_parser::symbols::AprsSymbol;
+    /// use ogn_parser::AprsSymbol;
     ///
     /// let symbol = AprsSymbol::parse('/', '_');
     /// assert_eq!(symbol, Some(AprsSymbol::WeatherStation));
@@ -276,7 +276,7 @@ impl AprsSymbol {
             ('/', '\\') => Some(Self::TriangleDfStation),
             ('/', ']') => Some(Self::MailPostOffice),
             ('/', '^') => Some(Self::LargeAircraft),
-            ('/', '_') => Some(Self::WeatherStationBlue),
+            ('/', '_') => Some(Self::WeatherStation),
             ('/', '`') => Some(Self::DishAntenna),
             ('/', 'a') => Some(Self::Ambulance),
             ('/', 'b') => Some(Self::Bike),
@@ -423,7 +423,7 @@ mod tests {
     #[test]
     fn test_emergency_symbol() {
         let symbol = AprsSymbol::parse('\\', '!');
-        assert_eq!(symbol, Some(AprsSymbol::Emergency));
+        assert_eq!(symbol, Some(AprsSymbol::EmergencyAndOverlays));
     }
 
     #[test]
