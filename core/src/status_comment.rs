@@ -303,6 +303,7 @@ impl FromStr for StatusComment {
             // name field: Name="XXX"
             } else if part.starts_with("Name=\"")
                 && part.ends_with('"')
+                && part.len() >= 7  // Must be at least 'Name=""' (7 chars)
                 && status_comment.name.is_none()
             {
                 let name = &part[6..part.len() - 1]; // Remove 'Name="' and '"'

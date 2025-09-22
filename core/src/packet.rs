@@ -707,4 +707,30 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn test_packet_with_malformed_name_field() {
+        // Test the problematic message that caused the panic
+        let result = r#"FNT4A08CC>OGNFNT,qAS,Innichen:>215504h Name=""#.parse::<AprsPacket>();
+
+        assert!(result.is_ok());
+        let packet = result.unwrap();
+
+        assert_eq!(packet.from, Callsign::new("FNT4A08CC"));
+        assert_eq!(packet.to, Callsign::new("OGNFNT"));
+        assert_eq!(packet.data_source(), Some(DataSource::OgnFnt));
+        assert_eq!(
+            packet.via,
+            vec![Callsign::new("qAS"), Callsign::new("Innichen")]
+        );
+
+        match packet.data {
+            AprsData::Status(status) => {
+                assert_eq!(status.timestamp, Some(Timestamp::HHMMSS(21, 55, 4)));
+                assert_eq!(status.comment.name, None); // Name should not be parsed due to malformed quotes
+                assert_eq!(status.comment.unparsed, Some("Name=\"".to_string()));
+            }
+            _ => panic!("Expected Status data type"),
+        }
+    }
 }
