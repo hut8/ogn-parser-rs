@@ -15,19 +15,19 @@ fn main() {
     let status_packet = "TEST123>APRS,WIDE1-1:>Status message";
 
     println!("Testing receiver packet:");
-    println!("Packet: {}", receiver_packet);
+    println!("Packet: {receiver_packet}");
     test_packet(receiver_packet);
 
     println!("\nTesting aircraft packet:");
-    println!("Packet: {}", aircraft_packet);
+    println!("Packet: {aircraft_packet}");
     test_packet(aircraft_packet);
 
     println!("\nTesting unknown packet:");
-    println!("Packet: {}", unknown_packet);
+    println!("Packet: {unknown_packet}");
     test_packet(unknown_packet);
 
     println!("\nTesting non-position packet:");
-    println!("Packet: {}", status_packet);
+    println!("Packet: {status_packet}");
     test_packet(status_packet);
 }
 
@@ -38,7 +38,7 @@ fn test_packet(packet_str: &str) {
             println!("  Source type: {:?}", packet.position_source_type());
         }
         Err(e) => {
-            println!("  Error parsing: {}", e);
+            println!("  Error parsing: {e}");
         }
     }
     println!();

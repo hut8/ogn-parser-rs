@@ -538,7 +538,7 @@ impl fmt::Display for AdsbEmitterCategory {
             AdsbEmitterCategory::C4 => "C4",
             AdsbEmitterCategory::C5 => "C5",
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 

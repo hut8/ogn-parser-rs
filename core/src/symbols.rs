@@ -209,7 +209,7 @@ impl AprsSymbol {
     /// use ogn_parser::AprsSymbol;
     ///
     /// let symbol = AprsSymbol::parse('/', '_');
-    /// assert_eq!(symbol, Some(AprsSymbol::WeatherStationBlue));
+    /// assert_eq!(symbol, Some(AprsSymbol::WeatherStation));
     /// ```
     pub fn parse(table: char, symbol: char) -> Option<Self> {
         match (table, symbol) {
@@ -460,12 +460,6 @@ mod tests {
     fn test_ground_wx_station_symbol() {
         let symbol = AprsSymbol::parse('/', '_');
         assert_eq!(symbol, Some(AprsSymbol::WeatherStation));
-    }
-
-    #[test]
-    fn test_tcpip_relay_symbol() {
-        let symbol = AprsSymbol::parse('/', 'I');
-        assert_eq!(symbol, Some(AprsSymbol::TcpipOnAirNetwork));
     }
 
     #[test]

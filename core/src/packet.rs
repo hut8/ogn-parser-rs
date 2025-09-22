@@ -181,7 +181,7 @@ impl Display for DataSource {
             DataSource::OgnWmn => "OGNWMN",
             DataSource::OgnVol => "OGNVOL",
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
@@ -480,9 +480,9 @@ mod tests {
         ];
 
         for data_source in test_cases {
-            let string_repr = format!("{}", data_source);
+            let string_repr = format!("{data_source}");
             let parsed = string_repr.parse::<DataSource>().unwrap();
-            assert_eq!(data_source, parsed, "Failed roundtrip for {}", string_repr);
+            assert_eq!(data_source, parsed, "Failed roundtrip for {string_repr}");
         }
     }
 
