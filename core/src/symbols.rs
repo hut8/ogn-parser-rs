@@ -5,196 +5,196 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AprsSymbol {
     // Primary Table (/)
-    PoliceSheriff,          // /! BB
-    ReservedRain,           // /" BC
-    DigiWhiteCenter,        // /# BD
-    Phone,                  // /$ BE
-    DxCluster,              // /% BF
-    HfGateway,              // /& BG
-    SmallAircraft,          // /' BH
-    MobileSatelliteStation, // /( BI
-    WheelchairHandicapped,  // /) BJ
-    Snowmobile,             // /* BK
-    RedCross,               // /+ BL
-    BoyScouts,              // /, BM
-    HouseQthVhf,            // /- BN
-    X,                      // /. BO
-    RedDot,                 // // BP
-    CircleObsolete,         // /0 P0
-    TbdNumbered1,           // /1 P1
-    TbdCirclesPool2,        // /2 P2
-    TbdBalls3,              // /3 P3
-    TbdOverlays4,           // /4 P4
-    TbdNumbers5,            // /5 P5
-    TbdAvailable6,          // /6 P6
-    TbdNewUses7,            // /7 P7
-    TbdMobilesEvents8,      // /8 P8
-    TbdMobilesEvents9,      // /9 P9
-    Fire,                   // /: MR
-    CampgroundPortableOps,  // /; MS
-    Motorcycle,             // /< MT
-    RailroadEngine,         // /= MU
-    Car,                    // /> MV
-    ServerForFiles,         // /? MW
-    HcFuturePredict,        // /@ MX
-    AidStation,             // /A PA
-    BbsOrPbbs,              // /B PB
-    Canoe,                  // /C PC
+    PoliceSheriff,          // /! BB Police, Sheriff
+    ReservedRain,           // /" BC reserved (was rain)
+    DigiWhiteCenter,        // /# BD DIGI (white center)
+    Phone,                  // /$ BE PHONE
+    DxCluster,              // /% BF DX CLUSTER
+    HfGateway,              // /& BG HF GATEway
+    SmallAircraft,          // /' BH Small AIRCRAFT (SSID-11)
+    MobileSatelliteStation, // /( BI Mobile Satellite Station
+    WheelchairHandicapped,  // /) BJ Wheelchair (handicapped)
+    Snowmobile,             // /* BK SnowMobile
+    RedCross,               // /+ BL Red Cross
+    BoyScouts,              // /, BM Boy Scouts
+    HouseQthVhf,            // /- BN House QTH (VHF)
+    X,                      // /. BO X
+    RedDot,                 // // BP Red Dot
+    CircleObsolete,         // /0 P0 # circle (obsolete)
+    TbdNumbered1,           // /1 P1 TBD (these were numbered)
+    TbdCirclesPool2,        // /2 P2 TBD (circles like pool)
+    TbdBalls3,              // /3 P3 TBD (balls. But with)
+    TbdOverlays4,           // /4 P4 TBD (overlays, we can)
+    TbdNumbers5,            // /5 P5 TBD (put all #'s on one)
+    TbdAvailable6,          // /6 P6 TBD (So 1-9 are available)
+    TbdNewUses7,            // /7 P7 TBD (for new uses?)
+    TbdMobilesEvents8,      // /8 P8 TBD (They are often used)
+    TbdMobilesEvents9,      // /9 P9 TBD (as mobiles at events)
+    Fire,                   // /: MR FIRE
+    CampgroundPortableOps,  // /; MS Campground (Portable ops)
+    Motorcycle,             // /< MT Motorcycle (SSID-10)
+    RailroadEngine,         // /= MU RAILROAD ENGINE
+    Car,                    // /> MV CAR (SSID-9)
+    ServerForFiles,         // /? MW SERVER for Files
+    HcFuturePredict,        // /@ MX HC FUTURE predict (dot)
+    AidStation,             // /A PA Aid Station
+    BbsOrPbbs,              // /B PB BBS or PBBS
+    Canoe,                  // /C PC Canoe
     // /D PD (empty in reference)
-    EyeballEvents,      // /E PE
-    FarmVehicleTractor, // /F PF
-    GridSquare6Digit,   // /G PG
-    HotelBlueBed,       // /H PH
-    TcpipOnAirNetwork,  // /I PI
+    EyeballEvents,      // /E PE EYEBALL (Events, etc!)
+    FarmVehicleTractor, // /F PF Farm Vehicle (tractor)
+    GridSquare6Digit,   // /G PG Grid Square (6 digit)
+    HotelBlueBed,       // /H PH HOTEL (blue bed symbol)
+    TcpipOnAirNetwork,  // /I PI TcpIp on air network stn
     // /J PJ (empty in reference)
-    School,                // /K PK
-    PcUser,                // /L PL
-    MacAprs,               // /M PM
-    NtsStation,            // /N PN
-    Balloon,               // /O PO
-    Police,                // /P PP
-    Tbd,                   // /Q PQ
-    RecVehicle,            // /R PR
-    Shuttle,               // /S PS
-    Sstv,                  // /T PT
-    Bus,                   // /U PU
-    Atv,                   // /V PV
-    NationalWxServiceSite, // /W PW
-    Helo,                  // /X PX
-    YachtSail,             // /Y PY
-    WinAprs,               // /Z PZ
-    HumanPerson,           // /[ HS
-    TriangleDfStation,     // /\ HT
-    MailPostOffice,        // /] HU
-    LargeAircraft,         // /^ HV
-    WeatherStationBlue,    // /_ HW
-    DishAntenna,           // /` HX
-    Ambulance,             // /a LA
-    Bike,                  // /b LB
-    IncidentCommandPost,   // /c LC
-    FireDept,              // /d LD
-    HorseEquestrian,       // /e LE
-    FireTruck,             // /f LF
-    Glider,                // /g LG
-    Hospital,              // /h LH
-    IotaIslandsOnTheAir,   // /i LI
-    Jeep,                  // /j LJ
-    Truck,                 // /k LK
-    Laptop,                // /l LL
-    MicERepeater,          // /m LM
-    NodeBlackBullseye,     // /n LN
-    Eoc,                   // /o LO
-    RoverPuppyDog,         // /p LP
-    GridSqShownAbove128m,  // /q LQ
-    Repeater,              // /r LR
-    ShipPwrBoat,           // /s LS
-    TruckStop,             // /t LT
-    Truck18Wheeler,        // /u LU
-    Van,                   // /v LV
-    WaterStation,          // /w LW
-    XAprsUnix,             // /x LX
-    YagiAtQth,             // /y LY
-    TbdZ,                  // /z LZ
+    School,                // /K PK School
+    PcUser,                // /L PL PC user (Jan 03)
+    MacAprs,               // /M PM MacAPRS
+    NtsStation,            // /N PN NTS Station
+    Balloon,               // /O PO BALLOON (SSID-11)
+    Police,                // /P PP Police
+    Tbd,                   // /Q PQ TBD
+    RecVehicle,            // /R PR REC. VEHICLE (SSID-13)
+    Shuttle,               // /S PS SHUTTLE
+    Sstv,                  // /T PT SSTV
+    Bus,                   // /U PU BUS (SSID-2)
+    Atv,                   // /V PV ATV
+    NationalWxServiceSite, // /W PW National WX Service Site
+    Helo,                  // /X PX HELO (SSID-6)
+    YachtSail,             // /Y PY YACHT (sail) (SSID-5)
+    WinAprs,               // /Z PZ WinAPRS
+    HumanPerson,           // /[ HS Human/Person (SSID-7)
+    TriangleDfStation,     // /\ HT TRIANGLE(DF station)
+    MailPostOffice,        // /] HU MAIL/PostOffice(was PBBS)
+    LargeAircraft,         // /^ HV LARGE AIRCRAFT
+    WeatherStation,        // /_ HW WEATHER Station (blue)
+    DishAntenna,           // /` HX Dish Antenna
+    Ambulance,             // /a LA AMBULANCE (SSID-1)
+    Bike,                  // /b LB BIKE (SSID-4)
+    IncidentCommandPost,   // /c LC Incident Command Post
+    FireDept,              // /d LD Fire dept
+    HorseEquestrian,       // /e LE HORSE (equestrian)
+    FireTruck,             // /f LF FIRE TRUCK (SSID-3)
+    Glider,                // /g LG Glider
+    Hospital,              // /h LH HOSPITAL
+    IotaIslandsOnTheAir,   // /i LI IOTA (islands on the air)
+    Jeep,                  // /j LJ JEEP (SSID-12)
+    Truck,                 // /k LK TRUCK (SSID-14)
+    Laptop,                // /l LL Laptop (Jan 03) (Feb 07)
+    MicERepeater,          // /m LM Mic-E Repeater
+    NodeBlackBullseye,     // /n LN Node (black bulls-eye)
+    Eoc,                   // /o LO EOC
+    Paraglider,            // /p LP ROVER (puppy, or dog)
+    GridSqShownAbove128m,  // /q LQ GRID SQ shown above 128 m
+    Repeater,              // /r LR Repeater (Feb 07)
+    ShipPwrBoat,           // /s LS SHIP (pwr boat) (SSID-8)
+    TruckStop,             // /t LT TRUCK STOP
+    Truck18Wheeler,        // /u LU TRUCK (18 wheeler)
+    Van,                   // /v LV VAN (SSID-15)
+    WaterStation,          // /w LW WATER station
+    XAprsUnix,             // /x LX xAPRS (Unix)
+    YagiAtQth,             // /y LY YAGI @ QTH
+    TbdZ,                  // /z LZ TBD
     // /{ J1 (empty in reference)
-    TncStreamSwitch1, // /| J2
+    TncStreamSwitch1, // /| J2 TNC Stream Switch
     // /} J3 (empty in reference)
-    TncStreamSwitch2, // /~ J4
+    TncStreamSwitch2, // /~ J4 TNC Stream Switch
 
     // Alternate Table (\)
-    EmergencyAndOverlays,     // \! OBO
-    ReservedAlt,              // \" OC
-    OverlayDigiGreenStar,     // \# OD#
-    BankAtmGreenBox,          // \$ OEO
-    PowerPlantWithOverlay,    // \% OFO
-    IgateRxTx1hop2hop,        // \& OG#
-    CrashIncidentSites,       // \' OHO
-    CloudyOtherClouds,        // \( OIO
-    FirenetMeoModisEarthObs,  // \) OJO
-    AvailSnowMoved,           // \* OK
-    Church,                   // \+ OL
-    GirlScouts,               // \, OM
-    HouseHfOpPresent,         // \- ONO
-    AmbiguousBigQuestionMark, // \. OO
-    WaypointDestination,      // \/ OP
-    CircleIrlpEcholinkWires,  // \0 A0#
-    Avail1,                   // \1 A1
-    Avail2,                   // \2 A2
-    Avail3,                   // \3 A3
-    Avail4,                   // \4 A4
-    Avail5,                   // \5 A5
-    Avail6,                   // \6 A6
-    Avail7,                   // \7 A7
-    Network80211OrOther,      // \8 A8O
-    GasStationBluePump,       // \9 A9
-    AvailHail,                // \: NR
-    ParkPicnicOverlayEvents,  // \; NSO
-    AdvisoryOneWxFlag,        // \< NTO
-    AvailSymbolOverlayGroup,  // \= NUO
-    OverlayedCarsVehicles,    // \> NV#
-    InfoKioskBlueBox,         // \? NW
-    HuricanetropStorm,        // \@ NX
-    OverlayBoxDtmfRfidXo,     // \A AA#
-    AvailBlowingSnow,         // \B AB
-    CoastGuard,               // \C AC
-    DepotsAndDrizzle,         // \D ADO
-    SmokeAndOtherVisCodes,    // \E AE
-    AvailFreezingRain,        // \F AF
-    AvailSnowShower,          // \G AG
-    HazeAndOverlayHazards,    // \H AHO
-    RainShower,               // \I AI
-    AvailLightning,           // \J AJ
-    KenwoodHt,                // \K AK
-    Lighthouse,               // \L AL
-    MarsArmyNavyAf,           // \M AMO
-    NavigationBuoy,           // \N AN
-    OverlayBalloonRocket,     // \O AO
-    Parking,                  // \P AP
-    Quake,                    // \Q AQ
-    Restaurant,               // \R ARO
-    SatellitePacsat,          // \S AS
-    Thunderstorm,             // \T AT
-    Sunny,                    // \U AU
-    VortacNavAid,             // \V AV
-    NwsSiteWithOptions,       // \W AW#
-    PharmacyRxApothicary,     // \X AX
-    RadiosAndDevices,         // \Y AYO
-    AvailZ,                   // \Z AZ
-    WCloudAndHumansOverlay,   // \[ DSO
-    NewOverlayableGpsSymbol,  // \\ DTO
-    AvailBackslash,           // \] DU
-    OtherAircraftOverlays,    // \^ DV#
-    WxSiteGreenDigi,          // \_ DW#
-    RainAllTypesWithOverlay,  // \` DX
-    ArrlAresWinlinkDstar,     // \a SA#O
-    AvailBlowingDustSand,     // \b SB
-    CdTriangleRacesSatern,    // \c SC#O
-    DxSpotByCallsign,         // \d SD
-    SleetAndFutureOverlays,   // \e SE
-    FunnelCloud,              // \f SF
-    GaleFlags,                // \g SG
-    StoreOrHamfest,           // \h SHO
-    BoxOrPointsOfInterest,    // \i SI#
-    WorkZoneSteamShovel,      // \j SJ
-    SpecialVehicleSuvAtv4x4,  // \k SKO
-    AreasBoxCircles,          // \l SL
-    ValueSign3DigitDisplay,   // \m SM
-    OverlayTriangle,          // \n SN#
-    SmallCircle,              // \o SO
-    AvailPartlyCloudy,        // \p SP
-    AvailQ,                   // \q SQ
-    Restrooms,                // \r SR
-    OverlayShipBoats,         // \s SS#
-    Tornado,                  // \t ST
-    OverlayedTruck,           // \u SU#
-    OverlayedVan,             // \v SV#
-    FloodingAvalanchesSlides, // \w SWO
-    WreckOrObstruction,       // \x SX
-    Skywarn,                  // \y SY
-    OverlayedShelter,         // \z SZ#
-    AvailFog,                 // \{ Q1
-    TncStreamSwitchAlt1,      // \| Q2
-    AvailMaybe,               // \} Q3
-    TncStreamSwitchAlt2,      // \~ Q4
+    EmergencyAndOverlays,     // \! OBO EMERGENCY (and overlays)
+    ReservedAlt,              // \" OC reserved
+    OverlayDigiGreenStar,     // \# OD# OVERLAY DIGI (green star)
+    BankAtmGreenBox,          // \$ OEO Bank or ATM (green box)
+    PowerPlantWithOverlay,    // \% OFO Power Plant with overlay
+    IgateRxTx1hop2hop,        // \& OG# I=Igte R=RX T=1hopTX 2=2hopTX
+    CrashIncidentSites,       // \' OHO Crash (& now Incident sites)
+    CloudyOtherClouds,        // \( OIO CLOUDY (other clouds w ovrly)
+    FirenetMeoModisEarthObs,  // \) OJO Firenet MEO, MODIS Earth Obs.
+    AvailSnowMoved,           // \* OK AVAIL (SNOW moved to ` ovly S)
+    Church,                   // \+ OL Church
+    GirlScouts,               // \, OM Girl Scouts
+    HouseHfOpPresent,         // \- ONO House (H=HF) (O = Op Present)
+    AmbiguousBigQuestionMark, // \. OO Ambiguous (Big Question mark)
+    WaypointDestination,      // \/ OP Waypoint Destination
+    CircleIrlpEcholinkWires,  // \0 A0# CIRCLE (IRLP/Echolink/WIRES)
+    Avail1,                   // \1 A1 AVAIL
+    Avail2,                   // \2 A2 AVAIL
+    Avail3,                   // \3 A3 AVAIL
+    Avail4,                   // \4 A4 AVAIL
+    Avail5,                   // \5 A5 AVAIL
+    Avail6,                   // \6 A6 AVAIL
+    Avail7,                   // \7 A7 AVAIL
+    Network80211OrOther,      // \8 A8O 802.11 or other network node
+    GasStationBluePump,       // \9 A9 Gas Station (blue pump)
+    AvailHail,                // \: NR AVAIL (Hail ==> ` ovly H)
+    ParkPicnicOverlayEvents,  // \; NSO Park/Picnic + overlay events
+    AdvisoryOneWxFlag,        // \< NTO ADVISORY (one WX flag)
+    AvailSymbolOverlayGroup,  // \= NUO avail. symbol overlay group
+    OverlayedCarsVehicles,    // \> NV# OVERLAYED CARs & Vehicles
+    InfoKioskBlueBox,         // \? NW INFO Kiosk (Blue box with ?)
+    HuricanetropStorm,        // \@ NX HURICANE/Trop-Storm
+    OverlayBoxDtmfRfidXo,     // \A AA# overlayBOX DTMF & RFID & XO
+    AvailBlowingSnow,         // \B AB AVAIL (BlwngSnow ==> E ovly B
+    CoastGuard,               // \C AC Coast Guard
+    DepotsAndDrizzle,         // \D ADO DEPOTS (Drizzle ==> ' ovly D)
+    SmokeAndOtherVisCodes,    // \E AE Smoke (& other vis codes)
+    AvailFreezingRain,        // \F AF AVAIL (FrzngRain ==> `F)
+    AvailSnowShower,          // \G AG AVAIL (Snow Shwr ==> I ovly S)
+    HazeAndOverlayHazards,    // \H AHO \Haze (& Overlay Hazards)
+    RainShower,               // \I AI Rain Shower
+    AvailLightning,           // \J AJ AVAIL (Lightening ==> I ovly L)
+    KenwoodHt,                // \K AK Kenwood HT (W)
+    Lighthouse,               // \L AL Lighthouse
+    MarsArmyNavyAf,           // \M AMO MARS (A=Army,N=Navy,F=AF)
+    NavigationBuoy,           // \N AN Navigation Buoy
+    OverlayBalloonRocket,     // \O AO Overlay Balloon (Rocket = \O)
+    Parking,                  // \P AP Parking
+    Quake,                    // \Q AQ QUAKE
+    Restaurant,               // \R ARO Restaurant
+    SatellitePacsat,          // \S AS Satellite/Pacsat
+    Thunderstorm,             // \T AT Thunderstorm
+    Sunny,                    // \U AU SUNNY
+    VortacNavAid,             // \V AV VORTAC Nav Aid
+    NwsSiteWithOptions,       // \W AW# # NWS site (NWS options)
+    PharmacyRxApothicary,     // \X AX Pharmacy Rx (Apothicary)
+    RadiosAndDevices,         // \Y AYO Radios and devices
+    AvailZ,                   // \Z AZ AVAIL
+    WCloudAndHumansOverlay,   // \[ DSO W.Cloud (& humans w Ovrly)
+    NewOverlayableGpsSymbol,  // \\ DTO New overlayable GPS symbol
+    AvailBackslash,           // \] DU AVAIL
+    OtherAircraftOverlays,    // \^ DV# other Aircraft ovrlys (2014)
+    WxSiteGreenDigi,          // \_ DW# # WX site (green digi)
+    RainAllTypesWithOverlay,  // \` DX Rain (all types w ovrly)
+    ArrlAresWinlinkDstar,     // \a SA#O ARRL,ARES,WinLINK,Dstar, etc
+    AvailBlowingDustSand,     // \b SB AVAIL(Blwng Dst/Snd => E ovly)
+    CdTriangleRacesSatern,    // \c SC#O CD triangle RACES/SATERN/etc
+    DxSpotByCallsign,         // \d SD DX spot by callsign
+    SleetAndFutureOverlays,   // \e SE Sleet (& future ovrly codes)
+    FunnelCloud,              // \f SF Funnel Cloud
+    GaleFlags,                // \g SG Gale Flags
+    StoreOrHamfest,           // \h SHO Store. or HAMFST Hh=HAM store
+    BoxOrPointsOfInterest,    // \i SI# BOX or points of Interest
+    WorkZoneSteamShovel,      // \j SJ WorkZone (Steam Shovel)
+    SpecialVehicleSuvAtv4x4,  // \k SKO Special Vehicle SUV,ATV,4x4
+    AreasBoxCircles,          // \l SL Areas (box,circles,etc)
+    ValueSign3DigitDisplay,   // \m SM Value Sign (3 digit display)
+    OverlayTriangle,          // \n SN# OVERLAY TRIANGLE
+    SmallCircle,              // \o SO small circle
+    AvailPartlyCloudy,        // \p SP AVAIL (PrtlyCldy => ( ovly P
+    AvailQ,                   // \q SQ AVAIL
+    Restrooms,                // \r SR Restrooms
+    OverlayShipBoats,         // \s SS# OVERLAY SHIP/boats
+    Tornado,                  // \t ST Tornado
+    OverlayedTruck,           // \u SU# OVERLAYED TRUCK
+    OverlayedVan,             // \v SV# OVERLAYED Van
+    FloodingAvalanchesSlides, // \w SWO Flooding (Avalanches/Slides)
+    WreckOrObstruction,       // \x SX Wreck or Obstruction ->X<-
+    Skywarn,                  // \y SY Skywarn
+    OverlayedShelter,         // \z SZ# OVERLAYED Shelter
+    AvailFog,                 // \{ Q1 AVAIL? (Fog ==> E ovly F)
+    TncStreamSwitchAlt1,      // \| Q2 TNC Stream Switch
+    AvailMaybe,               // \} Q3 AVAIL? (maybe)
+    TncStreamSwitchAlt2,      // \~ Q4 TNC Stream Switch
 }
 
 impl AprsSymbol {
@@ -206,10 +206,10 @@ impl AprsSymbol {
     ///
     /// # Example
     /// ```
-    /// use ogn_parser::symbols::AprsSymbol;
+    /// use ogn_parser::AprsSymbol;
     ///
     /// let symbol = AprsSymbol::parse('/', '_');
-    /// assert_eq!(symbol, Some(AprsSymbol::WeatherStation));
+    /// assert_eq!(symbol, Some(AprsSymbol::WeatherStationBlue));
     /// ```
     pub fn parse(table: char, symbol: char) -> Option<Self> {
         match (table, symbol) {
@@ -276,7 +276,7 @@ impl AprsSymbol {
             ('/', '\\') => Some(Self::TriangleDfStation),
             ('/', ']') => Some(Self::MailPostOffice),
             ('/', '^') => Some(Self::LargeAircraft),
-            ('/', '_') => Some(Self::WeatherStationBlue),
+            ('/', '_') => Some(Self::WeatherStation),
             ('/', '`') => Some(Self::DishAntenna),
             ('/', 'a') => Some(Self::Ambulance),
             ('/', 'b') => Some(Self::Bike),
@@ -293,7 +293,7 @@ impl AprsSymbol {
             ('/', 'm') => Some(Self::MicERepeater),
             ('/', 'n') => Some(Self::NodeBlackBullseye),
             ('/', 'o') => Some(Self::Eoc),
-            ('/', 'p') => Some(Self::RoverPuppyDog),
+            ('/', 'p') => Some(Self::Paraglider),
             ('/', 'q') => Some(Self::GridSqShownAbove128m),
             ('/', 'r') => Some(Self::Repeater),
             ('/', 's') => Some(Self::ShipPwrBoat),
@@ -423,7 +423,7 @@ mod tests {
     #[test]
     fn test_emergency_symbol() {
         let symbol = AprsSymbol::parse('\\', '!');
-        assert_eq!(symbol, Some(AprsSymbol::Emergency));
+        assert_eq!(symbol, Some(AprsSymbol::EmergencyAndOverlays));
     }
 
     #[test]
@@ -436,5 +436,53 @@ mod tests {
     fn test_invalid_table() {
         let symbol = AprsSymbol::parse('?', '_');
         assert_eq!(symbol, None);
+    }
+
+    #[test]
+    fn test_glider_symbol() {
+        let symbol = AprsSymbol::parse('/', 'g');
+        assert_eq!(symbol, Some(AprsSymbol::Glider));
+    }
+
+    #[test]
+    fn test_paraglider_symbol() {
+        let symbol = AprsSymbol::parse('/', 'p');
+        assert_eq!(symbol, Some(AprsSymbol::Paraglider));
+    }
+
+    #[test]
+    fn test_balloon_symbol() {
+        let symbol = AprsSymbol::parse('\\', 'O');
+        assert_eq!(symbol, Some(AprsSymbol::OverlayBalloonRocket));
+    }
+
+    #[test]
+    fn test_ground_wx_station_symbol() {
+        let symbol = AprsSymbol::parse('/', '_');
+        assert_eq!(symbol, Some(AprsSymbol::WeatherStation));
+    }
+
+    #[test]
+    fn test_tcpip_relay_symbol() {
+        let symbol = AprsSymbol::parse('/', 'I');
+        assert_eq!(symbol, Some(AprsSymbol::TcpipOnAirNetwork));
+    }
+
+    #[test]
+    fn test_small_aircraft_symbol() {
+        let symbol = AprsSymbol::parse('/', '\'');
+        assert_eq!(symbol, Some(AprsSymbol::SmallAircraft));
+    }
+
+    #[test]
+    fn test_large_aircraft_symbol() {
+        let symbol = AprsSymbol::parse('/', '^');
+        assert_eq!(symbol, Some(AprsSymbol::LargeAircraft));
+    }
+
+    #[test]
+    fn test_node_symbol() {
+        let symbol = AprsSymbol::parse('/', 'n');
+        assert_eq!(symbol, Some(AprsSymbol::NodeBlackBullseye));
     }
 }
