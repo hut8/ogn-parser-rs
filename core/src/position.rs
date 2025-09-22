@@ -4,7 +4,10 @@ use std::str::FromStr;
 use flat_projection::FlatProjection;
 use serde::Serialize;
 
+use crate::AprsData;
 use crate::AprsError;
+use crate::AprsPacket;
+use crate::AprsSymbol;
 use crate::Callsign;
 use crate::EncodeError;
 use crate::Timestamp;
@@ -23,6 +26,8 @@ pub enum PositionSourceType {
     Receiver,
     /// Position from an aircraft (contains qAS in via)
     Aircraft,
+    /// Position from a weather station (symbol is weather station)
+    WeatherStation,
     /// Unknown source type
     Unknown,
     /// Not a position packet
@@ -30,6 +35,18 @@ pub enum PositionSourceType {
 }
 
 impl PositionSourceType {
+    pub fn from_packet(packet: &AprsPacket) -> Self {
+        match &packet.data {
+            AprsData::Position(pos) => {
+                if let Some(sym) = AprsSymbol::parse(pos.symbol_table, pos.symbol_code) && sym == AprsSymbol::WeatherStation {
+                    return PositionSourceType::WeatherStation;
+                }
+                PositionSourceType::from_via(&packet.via)
+            }
+            _ => PositionSourceType::NotPosition,
+        }
+    }
+
     /// Determine the source type based on the via field of an APRS packet
     pub fn from_via(via: &[Callsign]) -> Self {
         let has_tcpip = via.iter().any(|callsign| callsign.0.starts_with("TCPIP"));

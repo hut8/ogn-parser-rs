@@ -241,7 +241,7 @@ impl AprsPacket {
     /// Get the source type based on the via field and packet type
     pub fn position_source_type(&self) -> crate::position::PositionSourceType {
         match &self.data {
-            AprsData::Position(_) => crate::position::PositionSourceType::from_via(&self.via),
+            AprsData::Position(_) => crate::position::PositionSourceType::from_packet(self),
             _ => crate::position::PositionSourceType::NotPosition,
         }
     }
