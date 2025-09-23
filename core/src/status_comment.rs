@@ -69,7 +69,28 @@ impl FromStr for StatusComment {
             ..Default::default()
         };
         let mut unparsed: Vec<_> = vec![];
-        let parts: Vec<&str> = s.split_whitespace().collect();
+
+        // First, extract quoted names that may contain spaces
+        let remaining_string;
+        let remaining = if let Some(name_start) = s.find("Name=\"") {
+            if let Some(name_end) = s[name_start + 6..].find('"') {
+                let name_end_absolute = name_start + 6 + name_end;
+                let name = &s[name_start + 6..name_end_absolute];
+                status_comment.name = Some(name.to_string());
+
+                // Remove the Name="..." part from the string for further parsing
+                let before_name = &s[..name_start];
+                let after_name = &s[name_end_absolute + 1..];
+                remaining_string = format!("{} {}", before_name.trim(), after_name.trim());
+                remaining_string.as_str()
+            } else {
+                s
+            }
+        } else {
+            s
+        };
+
+        let parts: Vec<&str> = remaining.split_whitespace().collect();
         let mut i = 0;
         while i < parts.len() {
             let part = parts[i];
@@ -300,14 +321,6 @@ impl FromStr for StatusComment {
                 } else {
                     unparsed.push(part);
                 }
-            // name field: Name="XXX"
-            } else if part.starts_with("Name=\"")
-                && part.ends_with('"')
-                && part.len() >= 7  // Must be at least 'Name=""' (7 chars)
-                && status_comment.name.is_none()
-            {
-                let name = &part[6..part.len() - 1]; // Remove 'Name="' and '"'
-                status_comment.name = Some(name.to_string());
             } else if let Some((value, unit)) = split_value_unit(part) {
                 // cpu temperature: +x.xC
                 // x.x: cpu temperature in [°C]
@@ -527,6 +540,18 @@ mod tests {
             StatusComment {
                 name: Some("Kourarau".to_string()),
                 demodulation_snr_db: Decimal::from_f32(3.7),
+                ..Default::default()
+            }
+        );
+    }
+
+    #[test]
+    fn test_dangling_quote() {
+        let result = r#"Name=""#.parse::<StatusComment>().unwrap();
+        assert_eq!(
+            result,
+            StatusComment {
+                unparsed: Some(r#"Name=""#.to_string()),
                 ..Default::default()
             }
         );

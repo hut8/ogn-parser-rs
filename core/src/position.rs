@@ -38,7 +38,9 @@ impl PositionSourceType {
     pub fn from_packet(packet: &AprsPacket) -> Self {
         match &packet.data {
             AprsData::Position(pos) => {
-                if let Some(sym) = AprsSymbol::parse(pos.symbol_table, pos.symbol_code) && sym == AprsSymbol::WeatherStation {
+                if let Some(sym) = AprsSymbol::parse(pos.symbol_table, pos.symbol_code)
+                    && sym == AprsSymbol::WeatherStation
+                {
                     return PositionSourceType::WeatherStation;
                 }
                 PositionSourceType::from_via(&packet.via)

@@ -331,11 +331,11 @@ mod tests {
         }
     }
 
-
     #[test]
     fn parse_non_ascii_message() {
-        let result = r#"FNTFC070C>OGNFNT,qAS,LSXI1:>231159h Name="Höhematte holfuy" sF1 cr4 6.2dB -12.9kHz"#
-            .parse::<AprsPacket>();
+        let result =
+            r#"FNTFC070C>OGNFNT,qAS,LSXI1:>231159h Name="Höhematte holfuy" sF1 cr4 6.2dB -12.9kHz"#
+                .parse::<AprsPacket>();
         assert!(result.is_ok());
 
         let packet = result.unwrap();
