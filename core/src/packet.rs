@@ -198,9 +198,6 @@ impl FromStr for AprsPacket {
     type Err = AprsError;
 
     fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
-        if !s.is_ascii() {
-            return Err(AprsError::InvalidCoding(s.to_owned()));
-        }
         let header_delimiter = s
             .find(':')
             .ok_or_else(|| AprsError::InvalidPacket(s.to_owned()))?;
@@ -334,12 +331,29 @@ mod tests {
         }
     }
 
+
     #[test]
-    fn parse_error_no_ascii() {
-        let result =
-            r"ICA3D17F2>APRS,qAS,dl4mea:/074849h4821.61N\01224.49E^322/103/A=003054 Hochkönig"
-                .parse::<AprsPacket>();
-        assert!(result.is_err());
+    fn parse_non_ascii_message() {
+        let result = r#"FNTFC070C>OGNFNT,qAS,LSXI1:>231159h Name="Höhematte holfuy" sF1 cr4 6.2dB -12.9kHz"#
+            .parse::<AprsPacket>();
+        assert!(result.is_ok());
+
+        let packet = result.unwrap();
+        assert_eq!(packet.from, Callsign::new("FNTFC070C"));
+        assert_eq!(packet.to, Callsign::new("OGNFNT"));
+        assert_eq!(packet.data_source(), Some(DataSource::OgnFnt));
+        assert_eq!(
+            packet.via,
+            vec![Callsign::new("qAS"), Callsign::new("LSXI1")]
+        );
+
+        match packet.data {
+            AprsData::Status(status) => {
+                assert_eq!(status.timestamp, Some(Timestamp::HHMMSS(23, 11, 59)));
+                assert_eq!(status.comment.name, Some("Höhematte holfuy".to_string()));
+            }
+            _ => panic!("Expected Status data type"),
+        }
     }
 
     #[test]
