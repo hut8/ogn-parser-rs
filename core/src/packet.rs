@@ -192,6 +192,8 @@ pub struct AprsPacket {
     pub via: Vec<Callsign>,
     #[serde(flatten)]
     pub data: AprsData,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub raw: Option<String>,
 }
 
 impl FromStr for AprsPacket {
@@ -233,6 +235,7 @@ impl FromStr for AprsPacket {
             to,
             via,
             data,
+            raw: Some(s.to_owned()),
         })
     }
 }
