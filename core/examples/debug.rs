@@ -6,5 +6,5 @@ fn main() {
     );
 
     println!("Data source: {:?}", result.as_ref().unwrap().data_source());
-    println!("{:#?}", result);
+    println!("{result:#?}");
 }

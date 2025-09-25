@@ -11,6 +11,8 @@ pub enum Timestamp {
     DDHHMM(u8, u8, u8),
     /// Hour, Minute and Second in UTC
     HHMMSS(u8, u8, u8),
+    /// Null timestamp (e.g., "______h")
+    Null,
     /// Unsupported timestamp format
     Unsupported(String),
 }
@@ -23,6 +25,11 @@ impl FromStr for Timestamp {
 
         if b.len() != 7 {
             return Err(AprsError::InvalidTimestamp(s.to_owned()));
+        }
+
+        // Check for null timestamp pattern (______h)
+        if s == "______h" {
+            return Ok(Timestamp::Null);
         }
 
         let one = s[0..2]
@@ -49,6 +56,7 @@ impl Display for Timestamp {
         match self {
             Self::DDHHMM(d, h, m) => write!(f, "{d:02}{h:02}{m:02}z"),
             Self::HHMMSS(h, m, s) => write!(f, "{h:02}{m:02}{s:02}h"),
+            Self::Null => write!(f, "______h"),
             Self::Unsupported(s) => write!(f, "{s}"),
         }
     }
@@ -97,9 +105,12 @@ impl Timestamp {
                     ))),
                 }
             }
-            Timestamp::Unsupported(_s) => {
-                todo!()
-            }
+            Timestamp::Null => Err(AprsError::TimestampOutOfRange(
+                "Null timestamp cannot be converted to datetime".to_string(),
+            )),
+            Timestamp::Unsupported(_s) => Err(AprsError::InvalidTimestamp(
+                "Unsupported timestamp cannot be converted to datetime".to_string(),
+            )),
         }
     }
 }
@@ -127,6 +138,17 @@ mod tests {
             "123456/".parse::<Timestamp>(),
             Ok(Timestamp::Unsupported("123456/".to_owned()))
         );
+    }
+
+    #[test]
+    fn parse_null_timestamp() {
+        assert_eq!("______h".parse(), Ok(Timestamp::Null));
+    }
+
+    #[test]
+    fn display_null_timestamp() {
+        let timestamp = Timestamp::Null;
+        assert_eq!(format!("{timestamp}"), "______h");
     }
 
     #[test]

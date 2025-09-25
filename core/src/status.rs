@@ -100,4 +100,18 @@ mod tests {
         wtr.serialize(aprs_position).unwrap();
         wtr.flush().unwrap();
     }
+
+    #[test]
+    fn test_problematic_name_parsing() {
+        // This should not panic and should parse successfully with the malformed Name="
+        let input = r#"215504h Name=""#;
+        let result = input.parse::<AprsStatus>();
+
+        // Should parse successfully with the unparsed part containing "Name="
+        assert!(result.is_ok());
+        let status = result.unwrap();
+        assert_eq!(status.timestamp, Some(Timestamp::HHMMSS(21, 55, 4)));
+        assert_eq!(status.comment.name, None); // Name should not be parsed due to malformed quotes
+        assert_eq!(status.comment.unparsed, Some("Name=\"".to_string()));
+    }
 }
