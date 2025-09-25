@@ -13,6 +13,8 @@ pub enum Timestamp {
     HHMMSS(u8, u8, u8),
     /// Null timestamp (e.g., "______h")
     Null,
+    /// Invalid
+    Invalid(String),
     /// Unsupported timestamp format
     Unsupported(String),
 }
@@ -24,7 +26,7 @@ impl FromStr for Timestamp {
         let b = s.as_bytes();
 
         if b.len() != 7 {
-            return Err(AprsError::InvalidTimestamp(s.to_owned()));
+            return Ok(Timestamp::Invalid(s.to_owned()));
         }
 
         // Check for null timestamp pattern (______h)
@@ -32,21 +34,24 @@ impl FromStr for Timestamp {
             return Ok(Timestamp::Null);
         }
 
-        let one = s[0..2]
-            .parse::<u8>()
-            .map_err(|_| AprsError::InvalidTimestamp(s.to_owned()))?;
-        let two = s[2..4]
-            .parse::<u8>()
-            .map_err(|_| AprsError::InvalidTimestamp(s.to_owned()))?;
-        let three = s[4..6]
-            .parse::<u8>()
-            .map_err(|_| AprsError::InvalidTimestamp(s.to_owned()))?;
+        let one = match s[0..2].parse::<u8>() {
+            Ok(val) => val,
+            Err(_) => return Ok(Timestamp::Invalid(s.to_owned())),
+        };
+        let two = match s[2..4].parse::<u8>() {
+            Ok(val) => val,
+            Err(_) => return Ok(Timestamp::Invalid(s.to_owned())),
+        };
+        let three = match s[4..6].parse::<u8>() {
+            Ok(val) => val,
+            Err(_) => return Ok(Timestamp::Invalid(s.to_owned())),
+        };
 
         Ok(match (b[6] as char, one, two, three) {
             ('z', 0..=31, 0..=23, 0..=59) => Timestamp::DDHHMM(one, two, three),
             ('h', 0..=23, 0..=59, 0..=59) => Timestamp::HHMMSS(one, two, three),
             ('/', _, _, _) => Timestamp::Unsupported(s.to_owned()),
-            _ => return Err(AprsError::InvalidTimestamp(s.to_owned())),
+            _ => Timestamp::Invalid(s.to_owned()),
         })
     }
 }
@@ -57,6 +62,7 @@ impl Display for Timestamp {
             Self::DDHHMM(d, h, m) => write!(f, "{d:02}{h:02}{m:02}z"),
             Self::HHMMSS(h, m, s) => write!(f, "{h:02}{m:02}{s:02}h"),
             Self::Null => write!(f, "______h"),
+            Self::Invalid(s) => write!(f, "{s}"),
             Self::Unsupported(s) => write!(f, "{s}"),
         }
     }
@@ -108,6 +114,7 @@ impl Timestamp {
             Timestamp::Null => Err(AprsError::TimestampOutOfRange(
                 "Null timestamp cannot be converted to datetime".to_string(),
             )),
+            Timestamp::Invalid(s) => Err(AprsError::InvalidTimestamp(format!("Invalid timestamp: {s}"))),
             Timestamp::Unsupported(_s) => Err(AprsError::InvalidTimestamp(
                 "Unsupported timestamp cannot be converted to datetime".to_string(),
             )),
@@ -155,7 +162,7 @@ mod tests {
     fn invalid_timestamp() {
         assert_eq!(
             "1234567".parse::<Timestamp>(),
-            Err(AprsError::InvalidTimestamp("1234567".to_owned()))
+            Ok(Timestamp::Invalid("1234567".to_owned()))
         );
     }
 
@@ -163,7 +170,7 @@ mod tests {
     fn invalid_timestamp2() {
         assert_eq!(
             "123a56z".parse::<Timestamp>(),
-            Err(AprsError::InvalidTimestamp("123a56z".to_owned()))
+            Ok(Timestamp::Invalid("123a56z".to_owned()))
         );
     }
 
@@ -171,7 +178,7 @@ mod tests {
     fn invalid_ddhhmm() {
         assert_eq!(
             "322460z".parse::<Timestamp>(),
-            Err(AprsError::InvalidTimestamp("322460z".to_owned()))
+            Ok(Timestamp::Invalid("322460z".to_owned()))
         );
     }
 
@@ -179,7 +186,7 @@ mod tests {
     fn invalid_hhmmss() {
         assert_eq!(
             "246060h".parse::<Timestamp>(),
-            Err(AprsError::InvalidTimestamp("246060h".to_owned()))
+            Ok(Timestamp::Invalid("246060h".to_owned()))
         );
     }
 

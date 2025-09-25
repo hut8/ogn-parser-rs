@@ -31,7 +31,11 @@ impl FromStr for AprsStatus {
         // Interpret the first 7 bytes as a timestamp, if valid.
         // Otherwise the whole field is the comment.
         let timestamp = if s.len() >= 7 {
-            s[0..7].parse::<Timestamp>().ok()
+            match s[0..7].parse::<Timestamp>() {
+                Ok(Timestamp::Invalid(_)) => None,
+                Ok(ts) => Some(ts),
+                Err(_) => None,
+            }
         } else {
             None
         };
