@@ -353,7 +353,9 @@ impl FromStr for PositionComment {
                 && position_comment.gps_quality.is_none()
             {
                 if let Some((first, second)) = part[3..].split_once('x') {
-                    if let (Ok(sat_used), Ok(sat_visible)) = (first.parse::<u8>(), second.parse::<u8>()) {
+                    if let (Ok(sat_used), Ok(sat_visible)) =
+                        (first.parse::<u8>(), second.parse::<u8>())
+                    {
                         if sat_used <= sat_visible {
                             position_comment.gps_quality = Some(part[3..].to_string());
                             position_comment.satellites_used = Some(sat_used);

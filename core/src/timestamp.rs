@@ -114,7 +114,9 @@ impl Timestamp {
             Timestamp::Null => Err(AprsError::TimestampOutOfRange(
                 "Null timestamp cannot be converted to datetime".to_string(),
             )),
-            Timestamp::Invalid(s) => Err(AprsError::InvalidTimestamp(format!("Invalid timestamp: {s}"))),
+            Timestamp::Invalid(s) => Err(AprsError::InvalidTimestamp(format!(
+                "Invalid timestamp: {s}"
+            ))),
             Timestamp::Unsupported(_s) => Err(AprsError::InvalidTimestamp(
                 "Unsupported timestamp cannot be converted to datetime".to_string(),
             )),
