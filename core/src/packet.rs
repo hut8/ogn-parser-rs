@@ -591,11 +591,10 @@ mod tests {
                 assert_eq!(position.comment.speed, Some(44));
                 assert_eq!(position.comment.altitude, Some(-6)); // Negative altitude!
                 assert_eq!(position.comment.climb_rate, Some(0));
-                // gps4x3 should fail validation since 4 > 3 (satellites_used > satellites_visible)
-                assert_eq!(position.comment.gps_quality, None);
-                assert_eq!(position.comment.satellites_used, None);
-                assert_eq!(position.comment.satellites_visible, None);
-                assert_eq!(position.comment.unparsed, Some("gps4x3".to_string()));
+                assert_eq!(position.comment.gps_quality, Some("4x3".to_string()));
+                assert_eq!(position.comment.gnss_horizontal_resolution, Some(4));
+                assert_eq!(position.comment.gnss_vertical_resolution, Some(3));
+                assert_eq!(position.comment.unparsed, None);
             }
             _ => panic!("Expected Position data type"),
         }

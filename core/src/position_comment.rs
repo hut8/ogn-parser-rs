@@ -64,9 +64,9 @@ pub struct PositionComment {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub gps_quality: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub satellites_used: Option<u8>,
+    pub gnss_horizontal_resolution: Option<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub satellites_visible: Option<u8>,
+    pub gnss_vertical_resolution: Option<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub flight_level: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -344,25 +344,18 @@ impl FromStr for PositionComment {
                 } else {
                     unparsed.push(part);
                 }
-            // Gps precision: gpsAxB
-            // A: satellites used (integer)
-            // B: satellites visible (integer)
-            // Validation: A <= B
+            // GPS precision: gpsAxB
+            // A: horizontal resolution (integer)
+            // B: vertical resolution (integer)
             } else if part.len() >= 6
                 && &part[0..3] == "gps"
                 && position_comment.gps_quality.is_none()
             {
                 if let Some((first, second)) = part[3..].split_once('x') {
-                    if let (Ok(sat_used), Ok(sat_visible)) =
-                        (first.parse::<u8>(), second.parse::<u8>())
-                    {
-                        if sat_used <= sat_visible {
-                            position_comment.gps_quality = Some(part[3..].to_string());
-                            position_comment.satellites_used = Some(sat_used);
-                            position_comment.satellites_visible = Some(sat_visible);
-                        } else {
-                            unparsed.push(part);
-                        }
+                    if let (Ok(h_res), Ok(v_res)) = (first.parse::<u8>(), second.parse::<u8>()) {
+                        position_comment.gps_quality = Some(part[3..].to_string());
+                        position_comment.gnss_horizontal_resolution = Some(h_res);
+                        position_comment.gnss_vertical_resolution = Some(v_res);
                     } else {
                         unparsed.push(part);
                     }
@@ -614,8 +607,8 @@ mod tests {
                 error: Some(7),
                 frequency_offset: Decimal::from_f32(-7.0),
                 gps_quality: Some("3x7".into()),
-                satellites_used: Some(3),
-                satellites_visible: Some(7),
+                gnss_horizontal_resolution: Some(3),
+                gnss_vertical_resolution: Some(7),
                 software_version: Decimal::from_f32(7.07),
                 hardware_version: Some(65),
                 original_address: u32::from_str_radix("D002F8", 16).ok(),
@@ -667,8 +660,8 @@ mod tests {
                 error: Some(19),
                 frequency_offset: Decimal::from_f32(23.8),
                 gps_quality: Some("36x55".into()),
-                satellites_used: Some(36),
-                satellites_visible: Some(55),
+                gnss_horizontal_resolution: Some(36),
+                gnss_vertical_resolution: Some(55),
                 flight_level: Decimal::from_f32(1267.81),
                 signal_power: None,
                 software_version: None,
@@ -709,8 +702,8 @@ mod tests {
                 signal_quality: Decimal::from_f32(40.2),
                 frequency_offset: Decimal::from_f32(-15.1),
                 gps_quality: Some("9x13".into()),
-                satellites_used: Some(9),
-                satellites_visible: Some(13),
+                gnss_horizontal_resolution: Some(9),
+                gnss_vertical_resolution: Some(13),
                 flight_level: Decimal::from_f32(21.72),
                 signal_power: Decimal::from_f32(15.8),
                 adsb_emitter_category: None,
@@ -749,8 +742,8 @@ mod tests {
                 signal_quality: Decimal::from_f32(40.2),
                 frequency_offset: Decimal::from_f32(-15.1),
                 gps_quality: Some("9x13".into()),
-                satellites_used: Some(9),
-                satellites_visible: Some(13),
+                gnss_horizontal_resolution: Some(9),
+                gnss_vertical_resolution: Some(13),
                 flight_level: Decimal::from_f32(21.72),
                 signal_power: Decimal::from_f32(15.8),
                 adsb_emitter_category: None,
@@ -1014,11 +1007,10 @@ mod tests {
         );
         assert_eq!(result.id.unwrap().address, 0xF63E59);
         assert_eq!(result.climb_rate, Some(0));
-        // gps4x3 should fail validation since 4 > 3 (satellites_used > satellites_visible)
-        assert_eq!(result.gps_quality, None);
-        assert_eq!(result.satellites_used, None);
-        assert_eq!(result.satellites_visible, None);
-        assert_eq!(result.unparsed, Some("gps4x3".to_string()));
+        assert_eq!(result.gps_quality, Some("4x3".to_string()));
+        assert_eq!(result.gnss_horizontal_resolution, Some(4));
+        assert_eq!(result.gnss_vertical_resolution, Some(3));
+        assert_eq!(result.unparsed, None);
 
         // Test altitude-only negative format
         let result2 = "/A=-00123".parse::<PositionComment>().unwrap();
@@ -1048,8 +1040,8 @@ mod tests {
         assert_eq!(result.error, Some(0));
         assert_eq!(result.frequency_offset, Decimal::from_f32(0.0));
         assert_eq!(result.gps_quality, Some("2x3".to_string()));
-        assert_eq!(result.satellites_used, Some(2));
-        assert_eq!(result.satellites_visible, Some(3));
+        assert_eq!(result.gnss_horizontal_resolution, Some(2));
+        assert_eq!(result.gnss_vertical_resolution, Some(3));
         assert_eq!(result.unparsed, None);
     }
 
@@ -1099,26 +1091,26 @@ mod tests {
     }
 
     #[test]
-    fn test_gps_quality_validation() {
-        // Valid: satellites_used <= satellites_visible
-        let valid = "gps5x10".parse::<PositionComment>().unwrap();
-        assert_eq!(valid.gps_quality, Some("5x10".to_string()));
-        assert_eq!(valid.satellites_used, Some(5));
-        assert_eq!(valid.satellites_visible, Some(10));
-        assert_eq!(valid.unparsed, None);
+    fn test_gps_quality_parsing() {
+        // Test parsing GPS precision as horizontal x vertical resolution
+        let result1 = "gps5x10".parse::<PositionComment>().unwrap();
+        assert_eq!(result1.gps_quality, Some("5x10".to_string()));
+        assert_eq!(result1.gnss_horizontal_resolution, Some(5));
+        assert_eq!(result1.gnss_vertical_resolution, Some(10));
+        assert_eq!(result1.unparsed, None);
 
-        // Valid: equal values
-        let equal = "gps8x8".parse::<PositionComment>().unwrap();
-        assert_eq!(equal.gps_quality, Some("8x8".to_string()));
-        assert_eq!(equal.satellites_used, Some(8));
-        assert_eq!(equal.satellites_visible, Some(8));
-        assert_eq!(equal.unparsed, None);
+        // Test with equal values
+        let result2 = "gps8x8".parse::<PositionComment>().unwrap();
+        assert_eq!(result2.gps_quality, Some("8x8".to_string()));
+        assert_eq!(result2.gnss_horizontal_resolution, Some(8));
+        assert_eq!(result2.gnss_vertical_resolution, Some(8));
+        assert_eq!(result2.unparsed, None);
 
-        // Invalid: satellites_used > satellites_visible
-        let invalid = "gps10x5".parse::<PositionComment>().unwrap();
-        assert_eq!(invalid.gps_quality, None);
-        assert_eq!(invalid.satellites_used, None);
-        assert_eq!(invalid.satellites_visible, None);
-        assert_eq!(invalid.unparsed, Some("gps10x5".to_string()));
+        // Test with first value larger than second (horizontal > vertical)
+        let result3 = "gps10x5".parse::<PositionComment>().unwrap();
+        assert_eq!(result3.gps_quality, Some("10x5".to_string()));
+        assert_eq!(result3.gnss_horizontal_resolution, Some(10));
+        assert_eq!(result3.gnss_vertical_resolution, Some(5));
+        assert_eq!(result3.unparsed, None);
     }
 }
