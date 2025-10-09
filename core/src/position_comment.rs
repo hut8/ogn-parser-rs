@@ -1113,4 +1113,28 @@ mod tests {
         assert_eq!(result3.gnss_vertical_resolution, Some(5));
         assert_eq!(result3.unparsed, None);
     }
+
+    #[test]
+    fn test_climb_fpm_negative_512() {
+        let result = "266/090/A=014650 !W00! id05A33971 -512fpm +0.0rot 0.0dB 0e +0.0kHz gps2x3"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result.course, Some(266));
+        assert_eq!(result.speed, Some(90));
+        assert_eq!(result.altitude, Some(14650));
+        assert_eq!(
+            result.additional_precision,
+            Some(AdditionalPrecision { lat: 0, lon: 0 })
+        );
+        assert_eq!(result.id.unwrap().address, 0xA33971);
+        assert_eq!(result.climb_rate, Some(-512));
+        assert_eq!(result.turn_rate, Decimal::from_f32(0.0));
+        assert_eq!(result.signal_quality, Decimal::from_f32(0.0));
+        assert_eq!(result.error, Some(0));
+        assert_eq!(result.frequency_offset, Decimal::from_f32(0.0));
+        assert_eq!(result.gps_quality, Some("2x3".to_string()));
+        assert_eq!(result.gnss_horizontal_resolution, Some(2));
+        assert_eq!(result.gnss_vertical_resolution, Some(3));
+        assert_eq!(result.unparsed, None);
+    }
 }
