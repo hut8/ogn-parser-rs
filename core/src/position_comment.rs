@@ -94,6 +94,10 @@ pub struct PositionComment {
     /// at this location to get altitude above mean sea level.
     pub geoid_offset: Option<i16>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub registration: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub unparsed: Option<String>,
 }
 
@@ -234,11 +238,10 @@ impl FromStr for PositionComment {
                         _ => unreachable!(),
                     }
                 }
-            // The second part can be the additional precision: !Wab!
+            // Additional precision: !Wab! (can appear anywhere in the comment)
             // a: additional latitude precision
             // b: additional longitude precision
-            } else if idx == 1
-                && part.len() == 5
+            } else if part.len() == 5
                 && &part[0..2] == "!W"
                 && &part[4..] == "!"
                 && position_comment.additional_precision.is_none()
@@ -474,10 +477,28 @@ impl FromStr for PositionComment {
                 } else {
                     unparsed.push(part);
                 }
+            // Registration: reg<registration>
+            } else if part.len() >= 4
+                && part.starts_with("reg")
+                && position_comment.registration.is_none()
+            {
+                position_comment.registration = Some(part[3..].to_string());
             } else {
                 unparsed.push(part);
             }
         }
+
+        // Post-process unparsed tokens to handle multi-word model field
+        // If any unparsed token starts with "model", collect it and all following tokens
+        if let Some(model_idx) = unparsed.iter().position(|&part| part.starts_with("model")) {
+            let model_parts: Vec<&str> = unparsed.drain(model_idx..).collect();
+            let model_str = model_parts.join(" ");
+            if model_str.len() >= 5 {
+                // "model" is 5 chars
+                position_comment.model = Some(model_str[5..].to_string());
+            }
+        }
+
         position_comment.unparsed = if !unparsed.is_empty() {
             Some(unparsed.join(" "))
         } else {
@@ -674,6 +695,8 @@ mod tests {
                 slot_frame: None,
                 crc_retry_count: None,
                 geoid_offset: None,
+                registration: None,
+                model: None,
                 unparsed: None
             }
         );
@@ -1135,6 +1158,31 @@ mod tests {
         assert_eq!(result.gps_quality, Some("2x3".to_string()));
         assert_eq!(result.gnss_horizontal_resolution, Some(2));
         assert_eq!(result.gnss_vertical_resolution, Some(3));
+        assert_eq!(result.unparsed, None);
+    }
+
+    #[test]
+    fn test_multiword_model_and_flexible_w_position() {
+        // Test packet with multi-word model, registration, and !W07! appearing later in the packet
+        let result = "199/372/A=012475 id25440356 -2112fpm 0rot !W07! fnA3:TAY1BC FL118 regOE-FBT modelTwin Star DA42"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result.course, Some(199));
+        assert_eq!(result.speed, Some(372));
+        assert_eq!(result.altitude, Some(12475));
+        assert_eq!(result.id.unwrap().address, 0x440356);
+        assert_eq!(result.climb_rate, Some(-2112));
+        assert_eq!(result.turn_rate, Decimal::from_f32(0.0));
+        assert_eq!(
+            result.additional_precision,
+            Some(AdditionalPrecision { lat: 0, lon: 7 })
+        );
+        assert_eq!(result.adsb_emitter_category, Some(AdsbEmitterCategory::A3));
+        assert_eq!(result.call_sign, Some("TAY1BC".to_string()));
+        assert_eq!(result.flight_number, Some("TAY1BC".to_string()));
+        assert_eq!(result.flight_level, Decimal::from_f32(118.0));
+        assert_eq!(result.registration, Some("OE-FBT".to_string()));
+        assert_eq!(result.model, Some("Twin Star DA42".to_string()));
         assert_eq!(result.unparsed, None);
     }
 }
