@@ -113,7 +113,7 @@ impl FromStr for PositionComment {
             // aaaaaa: altitude in feet (can be negative)
             // Handle this FIRST to avoid conflicts with flexible parsing
             if idx == 0 && part.starts_with("/A=") && position_comment.altitude.is_none() {
-                match part[3..].parse::<i32>().ok() {
+                match part.get(3..).and_then(|s| s.parse::<i32>().ok()) {
                     Some(altitude) => position_comment.altitude = Some(altitude),
                     None => unparsed.push(part),
                 }
@@ -123,12 +123,24 @@ impl FromStr for PositionComment {
             // aaaaaa: altitude in feet (optional)
             } else if idx == 0 && part.contains("/A=") && position_comment.course.is_none() {
                 if let Some(altitude_pos) = part.find("/A=") {
-                    let course_speed_part = &part[0..altitude_pos];
-                    let altitude_part = &part[altitude_pos + 3..];
+                    let course_speed_part = match part.get(..altitude_pos) {
+                        Some(s) => s,
+                        None => {
+                            unparsed.push(part);
+                            continue;
+                        }
+                    };
+                    let altitude_part = match part.get(altitude_pos + 3..) {
+                        Some(s) => s,
+                        None => {
+                            unparsed.push(part);
+                            continue;
+                        }
+                    };
 
                     if let Some(speed_pos) = course_speed_part.rfind('/') {
-                        let course_str = &course_speed_part[0..speed_pos];
-                        let speed_str = &course_speed_part[speed_pos + 1..];
+                        let course_str = course_speed_part.get(..speed_pos).unwrap_or("");
+                        let speed_str = course_speed_part.get(speed_pos + 1..).unwrap_or("");
 
                         let course = course_str.parse::<f32>().ok().and_then(|c| {
                             if c >= 0.0 && c <= 360.0 {
@@ -163,8 +175,8 @@ impl FromStr for PositionComment {
             // No letters (to avoid weather reports)
             {
                 if let Some(speed_pos) = part.rfind('/') {
-                    let course_str = &part[0..speed_pos];
-                    let speed_str = &part[speed_pos + 1..];
+                    let course_str = part.get(..speed_pos).unwrap_or("");
+                    let speed_str = part.get(speed_pos + 1..).unwrap_or("");
 
                     let course = course_str.parse::<f32>().ok().and_then(|c| {
                         if c >= 0.0 && c <= 360.0 {
@@ -329,7 +341,7 @@ impl FromStr for PositionComment {
                 && part.to_lowercase().starts_with("sq")
                 && position_comment.squawk.is_none()
             {
-                let squawk_code = &part[2..];
+                let squawk_code = part.get(2..).unwrap_or("");
                 if squawk_code.len() == 4 && squawk_code.chars().all(|c| c.is_ascii_digit()) {
                     position_comment.squawk = Some(squawk_code.to_string());
                 } else {
@@ -362,7 +374,7 @@ impl FromStr for PositionComment {
                 && part.starts_with("gps")
                 && position_comment.gps_quality.is_none()
             {
-                let gps_rest = &part[3..]; // safe: "gps" is ASCII
+                let gps_rest = part.get(3..).unwrap_or("");
                 if let Some((first, second)) = gps_rest.split_once('x') {
                     if let (Ok(h_res), Ok(v_res)) = (first.parse::<u8>(), second.parse::<u8>()) {
                         position_comment.gps_quality = Some(gps_rest.to_string());
@@ -380,7 +392,7 @@ impl FromStr for PositionComment {
                 && part.starts_with("FL")
                 && position_comment.flight_level.is_none()
             {
-                if let Ok(flight_level) = part[2..].parse::<f32>() {
+                if let Some(Ok(flight_level)) = part.get(2..).map(|s| s.parse::<f32>()) {
                     position_comment.flight_level = Decimal::from_f32(flight_level);
                 } else {
                     unparsed.push(part);
@@ -389,10 +401,10 @@ impl FromStr for PositionComment {
             // XX.YY: float value for software version
             } else if part.len() >= 2
                 && part.starts_with('s')
-                && part[1..].contains('.')
+                && part.get(1..).is_some_and(|s| s.contains('.'))
                 && position_comment.software_version.is_none()
             {
-                if let Ok(software_version) = part[1..].parse::<f32>() {
+                if let Some(Ok(software_version)) = part.get(1..).map(|s| s.parse::<f32>()) {
                     position_comment.software_version = Decimal::from_f32(software_version);
                 } else {
                     unparsed.push(part);
@@ -403,8 +415,12 @@ impl FromStr for PositionComment {
                 && part.starts_with('h')
                 && position_comment.hardware_version.is_none()
             {
-                if part[1..3].chars().all(|c| c.is_ascii_hexdigit()) {
-                    position_comment.hardware_version = u8::from_str_radix(&part[1..3], 16).ok();
+                if part
+                    .get(1..3)
+                    .is_some_and(|s| s.chars().all(|c| c.is_ascii_hexdigit()))
+                {
+                    position_comment.hardware_version =
+                        part.get(1..3).and_then(|s| u8::from_str_radix(s, 16).ok());
                 } else {
                     unparsed.push(part);
                 }
@@ -414,8 +430,12 @@ impl FromStr for PositionComment {
                 && part.starts_with('r')
                 && position_comment.original_address.is_none()
             {
-                if part[1..7].chars().all(|c| c.is_ascii_hexdigit()) {
-                    position_comment.original_address = u32::from_str_radix(&part[1..7], 16).ok();
+                if part
+                    .get(1..7)
+                    .is_some_and(|s| s.chars().all(|c| c.is_ascii_hexdigit()))
+                {
+                    position_comment.original_address =
+                        part.get(1..7).and_then(|s| u32::from_str_radix(s, 16).ok());
                 } else {
                     unparsed.push(part);
                 }
@@ -428,7 +448,13 @@ impl FromStr for PositionComment {
                 let prefix_len = if part.starts_with("EGM96:") { 6 } else { 11 }; // "GeoidSepar:" is 11 chars
                 if part.len() >= prefix_len + 2 {
                     // At least prefix + 1 digit + 'm'
-                    let offset_str = &part[prefix_len..part.len() - 1]; // Remove prefix and "m" suffix
+                    let offset_str = match part.get(prefix_len..part.len() - 1) {
+                        Some(s) => s,
+                        None => {
+                            unparsed.push(part);
+                            continue;
+                        }
+                    };
                     if let Ok(offset) = offset_str.parse::<i16>() {
                         position_comment.geoid_offset = Some(offset);
                     } else {
@@ -471,7 +497,7 @@ impl FromStr for PositionComment {
                 && part.starts_with("sF")
                 && position_comment.slot_frame.is_none()
             {
-                if let Ok(slot_frame) = part[2..].parse::<u8>() {
+                if let Some(Ok(slot_frame)) = part.get(2..).map(|s| s.parse::<u8>()) {
                     position_comment.slot_frame = Some(slot_frame);
                 } else {
                     unparsed.push(part);
@@ -481,7 +507,7 @@ impl FromStr for PositionComment {
                 && part.starts_with("cr")
                 && position_comment.crc_retry_count.is_none()
             {
-                if let Ok(retry_count) = part[2..].parse::<u8>() {
+                if let Some(Ok(retry_count)) = part.get(2..).map(|s| s.parse::<u8>()) {
                     position_comment.crc_retry_count = Some(retry_count);
                 } else {
                     unparsed.push(part);
@@ -491,7 +517,7 @@ impl FromStr for PositionComment {
                 && part.starts_with("reg")
                 && position_comment.registration.is_none()
             {
-                position_comment.registration = Some(part[3..].to_string());
+                position_comment.registration = part.get(3..).map(|s| s.to_string());
             } else {
                 unparsed.push(part);
             }
@@ -504,7 +530,7 @@ impl FromStr for PositionComment {
             let model_str = model_parts.join(" ");
             if model_str.len() >= 5 {
                 // "model" is 5 chars
-                position_comment.model = Some(model_str[5..].to_string());
+                position_comment.model = model_str.get(5..).map(|s| s.to_string());
             }
         }
 
