@@ -92,9 +92,18 @@ impl FromStr for AprsPosition {
 
         // Extract timestamp and remaining string
         let (timestamp, s) = if has_timestamp {
-            (Some(s[1..8].parse()?), &s[8..])
+            let ts_str = s
+                .get(1..8)
+                .ok_or_else(|| AprsError::InvalidPosition(s.to_owned()))?;
+            let rest = s
+                .get(8..)
+                .ok_or_else(|| AprsError::InvalidPosition(s.to_owned()))?;
+            (Some(ts_str.parse()?), rest)
         } else {
-            (None, &s[1..])
+            let rest = s
+                .get(1..)
+                .ok_or_else(|| AprsError::InvalidPosition(s.to_owned()))?;
+            (None, rest)
         };
 
         // check for compressed position format
@@ -104,13 +113,25 @@ impl FromStr for AprsPosition {
         }
 
         // parse position
-        let mut latitude: Latitude = s[0..8].parse()?;
-        let mut longitude: Longitude = s[9..18].parse()?;
+        let lat_str = s
+            .get(0..8)
+            .ok_or_else(|| AprsError::InvalidPosition(s.to_owned()))?;
+        let mut latitude: Latitude = lat_str.parse()?;
+        let lon_str = s
+            .get(9..18)
+            .ok_or_else(|| AprsError::InvalidPosition(s.to_owned()))?;
+        let mut longitude: Longitude = lon_str.parse()?;
 
-        let symbol_table = s.chars().nth(8).unwrap();
-        let symbol_code = s.chars().nth(18).unwrap();
+        let symbol_table = s
+            .chars()
+            .nth(8)
+            .ok_or_else(|| AprsError::InvalidPosition(s.to_owned()))?;
+        let symbol_code = s
+            .chars()
+            .nth(18)
+            .ok_or_else(|| AprsError::InvalidPosition(s.to_owned()))?;
 
-        let comment = &s[19..s.len()];
+        let comment = s.get(19..).unwrap_or("");
 
         // parse the comment
         let ogn = comment.parse::<PositionComment>().unwrap();

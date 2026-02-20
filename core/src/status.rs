@@ -30,8 +30,8 @@ impl FromStr for AprsStatus {
     fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
         // Interpret the first 7 bytes as a timestamp, if valid.
         // Otherwise the whole field is the comment.
-        let timestamp = if s.len() >= 7 {
-            match s[0..7].parse::<Timestamp>() {
+        let timestamp = if let Some(ts_str) = s.get(0..7) {
+            match ts_str.parse::<Timestamp>() {
                 Ok(Timestamp::Invalid(_)) => None,
                 Ok(ts) => Some(ts),
                 Err(_) => None,
@@ -39,7 +39,11 @@ impl FromStr for AprsStatus {
         } else {
             None
         };
-        let comment = if timestamp.is_some() { &s[7..] } else { s };
+        let comment = if timestamp.is_some() {
+            s.get(7..).unwrap_or("")
+        } else {
+            s
+        };
 
         Ok(AprsStatus {
             timestamp,
