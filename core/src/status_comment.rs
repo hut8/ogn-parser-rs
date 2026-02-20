@@ -98,7 +98,7 @@ impl FromStr for StatusComment {
             // X (major)
             // Y (minor)
             // Z (bugfix)
-            if &part[0..1] == "v"
+            if part.starts_with('v')
                 && part.matches('.').count() == 3
                 && status_comment.version.is_none()
             {
@@ -107,19 +107,21 @@ impl FromStr for StatusComment {
                     .nth(2)
                     .map(|(idx, _)| part.split_at(idx))
                     .unwrap();
-                status_comment.version = Some(first[1..].into());
-                status_comment.platform = Some(second[1..].into());
+                status_comment.version = first.get(1..).map(Into::into);
+                status_comment.platform = second.get(1..).map(Into::into);
 
             // OGN-R/PilotAware version: vYYYYMMDD OGN-R/PilotAware
             // YYYYMMDD: date in format YYYYMMDD
             } else if part.len() == 9
                 && part.starts_with('v')
-                && part[1..].chars().all(|c| c.is_ascii_digit())
+                && part
+                    .get(1..)
+                    .is_some_and(|s| s.chars().all(|c| c.is_ascii_digit()))
                 && status_comment.ognr_pilotaware_version.is_none()
                 && i + 1 < parts.len()
                 && parts[i + 1] == "OGN-R/PilotAware"
             {
-                status_comment.ognr_pilotaware_version = Some(part[1..].to_string());
+                status_comment.ognr_pilotaware_version = part.get(1..).map(|s| s.to_string());
                 i += 1; // Skip the "OGN-R/PilotAware" part
 
             // cpu load: CPU:x.x
@@ -147,7 +149,7 @@ impl FromStr for StatusComment {
                 let split_point = subpart.find('/').unwrap();
                 let (first, second) = subpart.split_at(split_point);
                 let ram_free = first.parse::<f32>().ok();
-                let ram_total = second[1..].parse::<f32>().ok();
+                let ram_total = second.get(1..).and_then(|s| s.parse::<f32>().ok());
                 if ram_free.is_some() && ram_total.is_some() {
                     status_comment.ram_free = ram_free.and_then(Decimal::from_f32);
                     status_comment.ram_total = ram_total.and_then(Decimal::from_f32);
@@ -166,8 +168,10 @@ impl FromStr for StatusComment {
                 let subpart = &part[4..part.len() - 3];
                 let split_point = subpart.find('/').unwrap();
                 let (first, second) = subpart.split_at(split_point);
-                let ntp_offset = first[0..first.len() - 2].parse::<f32>().ok();
-                let ntp_correction = second[1..].parse::<f32>().ok();
+                let ntp_offset = first
+                    .get(..first.len().saturating_sub(2))
+                    .and_then(|s| s.parse::<f32>().ok());
+                let ntp_correction = second.get(1..).and_then(|s| s.parse::<f32>().ok());
                 if ntp_offset.is_some() && ntp_correction.is_some() {
                     status_comment.ntp_offset = ntp_offset.and_then(Decimal::from_f32);
                     status_comment.ntp_correction = ntp_correction.and_then(Decimal::from_f32);
@@ -187,7 +191,7 @@ impl FromStr for StatusComment {
                 let split_point = subpart.find('/').unwrap();
                 let (first, second) = subpart.split_at(split_point);
                 let visible_senders = first.parse::<u16>().ok();
-                let senders = second[1..].parse::<u16>().ok();
+                let senders = second.get(1..).and_then(|s| s.parse::<u16>().ok());
                 if visible_senders.is_some() && senders.is_some() {
                     status_comment.visible_senders = visible_senders;
                     status_comment.senders = senders;
@@ -555,6 +559,26 @@ mod tests {
                 ..Default::default()
             }
         );
+    }
+
+    #[test]
+    fn test_non_ascii_does_not_panic() {
+        // Bullet character (U+2022, 3 bytes) — caused panic at &part[0..1]
+        let result = "•".parse::<StatusComment>().unwrap();
+        assert_eq!(result.unparsed, Some("•".to_string()));
+
+        // Emoji (4 bytes)
+        let result = "😀".parse::<StatusComment>().unwrap();
+        assert_eq!(result.unparsed, Some("😀".to_string()));
+
+        // Non-ASCII mixed with valid fields
+        let result = "v0.2.7.RPI-GPU •invalid CPU:0.7"
+            .parse::<StatusComment>()
+            .unwrap();
+        assert_eq!(result.version, Some("0.2.7".into()));
+        assert_eq!(result.platform, Some("RPI-GPU".into()));
+        assert_eq!(result.cpu_load, Decimal::from_f32(0.7));
+        assert_eq!(result.unparsed, Some("•invalid".to_string()));
     }
 
     #[test]
