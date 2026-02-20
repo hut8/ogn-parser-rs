@@ -11,6 +11,9 @@ license.workspace = true
 name = "ogn_parser"
 crate-type = ["cdylib"]
 
+[lints]
+workspace = true
+
 [dependencies]
 pyo3 = { version= "0.25.0", features = ["chrono", "rust_decimal"] }
 rayon = "1.10.0"
