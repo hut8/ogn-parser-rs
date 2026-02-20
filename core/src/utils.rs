@@ -22,7 +22,11 @@ pub fn split_value_unit(s: &str) -> Option<(&str, &str)> {
         .last()
         .and_then(|(split_position, has_digits)| {
             if has_digits && split_position != length - 1 {
-                Some((&s[..(split_position + 1)], &s[(split_position + 1)..]))
+                // Use get() to safely split without panicking on UTF-8 boundaries
+                match (s.get(..(split_position + 1)), s.get((split_position + 1)..)) {
+                    (Some(value), Some(unit)) => Some((value, unit)),
+                    _ => None,
+                }
             } else {
                 None
             }
