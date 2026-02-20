@@ -6,7 +6,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.3.16"
+version = "0.3.17"
 license = "MIT/Apache-2.0"
 
 [workspace.lints.clippy]
