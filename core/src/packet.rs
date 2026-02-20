@@ -204,7 +204,9 @@ impl FromStr for AprsPacket {
             .find(':')
             .ok_or_else(|| AprsError::InvalidPacket(s.to_owned()))?;
         let (header, rest) = s.split_at(header_delimiter);
-        let body = &rest[1..];
+        let body = rest
+            .get(1..)
+            .ok_or_else(|| AprsError::InvalidPacket(s.to_owned()))?;
 
         let from_delimiter = header
             .find('>')
@@ -212,7 +214,9 @@ impl FromStr for AprsPacket {
         let (from, rest) = header.split_at(from_delimiter);
         let from = Callsign::from_str(from)?;
 
-        let to_and_via = &rest[1..];
+        let to_and_via = rest
+            .get(1..)
+            .ok_or_else(|| AprsError::InvalidPacket(s.to_owned()))?;
         let to_and_via: Vec<_> = to_and_via.split(',').collect();
 
         let to = to_and_via
@@ -277,9 +281,9 @@ impl FromStr for AprsData {
 
     fn from_str(s: &str) -> Result<Self, AprsError> {
         Ok(match s.chars().next().unwrap_or(0 as char) {
-            ':' => AprsData::Message(AprsMessage::from_str(&s[1..])?),
+            ':' => AprsData::Message(AprsMessage::from_str(s.get(1..).unwrap_or(""))?),
             '!' | '/' | '=' | '@' => AprsData::Position(AprsPosition::from_str(s)?),
-            '>' => AprsData::Status(AprsStatus::from_str(&s[1..])?),
+            '>' => AprsData::Status(AprsStatus::from_str(s.get(1..).unwrap_or(""))?),
             _ => AprsData::Unknown,
         })
     }

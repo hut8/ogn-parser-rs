@@ -34,17 +34,17 @@ impl FromStr for Timestamp {
             return Ok(Timestamp::Null);
         }
 
-        let one = match s[0..2].parse::<u8>() {
-            Ok(val) => val,
-            Err(_) => return Ok(Timestamp::Invalid(s.to_owned())),
+        let one = match s.get(0..2).and_then(|s| s.parse::<u8>().ok()) {
+            Some(val) => val,
+            None => return Ok(Timestamp::Invalid(s.to_owned())),
         };
-        let two = match s[2..4].parse::<u8>() {
-            Ok(val) => val,
-            Err(_) => return Ok(Timestamp::Invalid(s.to_owned())),
+        let two = match s.get(2..4).and_then(|s| s.parse::<u8>().ok()) {
+            Some(val) => val,
+            None => return Ok(Timestamp::Invalid(s.to_owned())),
         };
-        let three = match s[4..6].parse::<u8>() {
-            Ok(val) => val,
-            Err(_) => return Ok(Timestamp::Invalid(s.to_owned())),
+        let three = match s.get(4..6).and_then(|s| s.parse::<u8>().ok()) {
+            Some(val) => val,
+            None => return Ok(Timestamp::Invalid(s.to_owned())),
         };
 
         Ok(match (b[6] as char, one, two, three) {

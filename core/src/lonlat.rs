@@ -39,13 +39,19 @@ impl FromStr for Latitude {
             _ => return Err(Self::Err::InvalidLatitude(s.to_owned())),
         };
 
-        let deg = s[0..2]
+        let deg = s
+            .get(0..2)
+            .ok_or_else(|| Self::Err::InvalidLatitude(s.to_owned()))?
             .parse::<u32>()
             .map_err(|_| Self::Err::InvalidLatitude(s.to_owned()))? as f64;
-        let min = s[2..4]
+        let min = s
+            .get(2..4)
+            .ok_or_else(|| Self::Err::InvalidLatitude(s.to_owned()))?
             .parse::<u32>()
             .map_err(|_| Self::Err::InvalidLatitude(s.to_owned()))? as f64;
-        let min_frac = s[5..7]
+        let min_frac = s
+            .get(5..7)
+            .ok_or_else(|| Self::Err::InvalidLatitude(s.to_owned()))?
             .parse::<u32>()
             .map_err(|_| Self::Err::InvalidLatitude(s.to_owned()))? as f64;
 
@@ -93,13 +99,19 @@ impl FromStr for Longitude {
             _ => return Err(Self::Err::InvalidLongitude(s.to_owned())),
         };
 
-        let deg = s[0..3]
+        let deg = s
+            .get(0..3)
+            .ok_or_else(|| Self::Err::InvalidLongitude(s.to_owned()))?
             .parse::<u32>()
             .map_err(|_| Self::Err::InvalidLongitude(s.to_owned()))? as f64;
-        let min = s[3..5]
+        let min = s
+            .get(3..5)
+            .ok_or_else(|| Self::Err::InvalidLongitude(s.to_owned()))?
             .parse::<u32>()
             .map_err(|_| Self::Err::InvalidLongitude(s.to_owned()))? as f64;
-        let min_frac = s[6..8]
+        let min_frac = s
+            .get(6..8)
+            .ok_or_else(|| Self::Err::InvalidLongitude(s.to_owned()))?
             .parse::<u32>()
             .map_err(|_| Self::Err::InvalidLongitude(s.to_owned()))? as f64;
 

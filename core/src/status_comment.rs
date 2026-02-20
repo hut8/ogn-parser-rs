@@ -73,16 +73,24 @@ impl FromStr for StatusComment {
         // First, extract quoted names that may contain spaces
         let remaining_string;
         let remaining = if let Some(name_start) = s.find("Name=\"") {
-            if let Some(name_end) = s[name_start + 6..].find('"') {
-                let name_end_absolute = name_start + 6 + name_end;
-                let name = &s[name_start + 6..name_end_absolute];
-                status_comment.name = Some(name.to_string());
-
-                // Remove the Name="..." part from the string for further parsing
-                let before_name = &s[..name_start];
-                let after_name = &s[name_end_absolute + 1..];
-                remaining_string = format!("{} {}", before_name.trim(), after_name.trim());
-                remaining_string.as_str()
+            let after_quote = name_start + 6; // "Name=\"" is 6 ASCII bytes
+            if let Some(rest) = s.get(after_quote..) {
+                if let Some(name_end) = rest.find('"') {
+                    let name_end_absolute = after_quote + name_end;
+                    if let (Some(name), Some(before_name), Some(after_name)) = (
+                        s.get(after_quote..name_end_absolute),
+                        s.get(..name_start),
+                        s.get(name_end_absolute + 1..),
+                    ) {
+                        status_comment.name = Some(name.to_string());
+                        remaining_string = format!("{} {}", before_name.trim(), after_name.trim());
+                        remaining_string.as_str()
+                    } else {
+                        s
+                    }
+                } else {
+                    s
+                }
             } else {
                 s
             }
@@ -130,7 +138,7 @@ impl FromStr for StatusComment {
                 && part.starts_with("CPU:")
                 && status_comment.cpu_load.is_none()
             {
-                if let Ok(cpu_load) = part[4..].parse::<f32>() {
+                if let Some(Ok(cpu_load)) = part.get(4..).map(|s| s.parse::<f32>()) {
                     status_comment.cpu_load = Decimal::from_f32(cpu_load);
                 } else {
                     unparsed.push(part);
@@ -145,7 +153,14 @@ impl FromStr for StatusComment {
                 && part.find('/').is_some()
                 && status_comment.ram_free.is_none()
             {
-                let subpart = &part[4..part.len() - 2];
+                let subpart = match part.get(4..part.len() - 2) {
+                    Some(s) => s,
+                    None => {
+                        unparsed.push(part);
+                        i += 1;
+                        continue;
+                    }
+                };
                 let split_point = subpart.find('/').unwrap();
                 let (first, second) = subpart.split_at(split_point);
                 let ram_free = first.parse::<f32>().ok();
@@ -165,7 +180,14 @@ impl FromStr for StatusComment {
                 && part.find('/').is_some()
                 && status_comment.ntp_offset.is_none()
             {
-                let subpart = &part[4..part.len() - 3];
+                let subpart = match part.get(4..part.len().saturating_sub(3)) {
+                    Some(s) => s,
+                    None => {
+                        unparsed.push(part);
+                        i += 1;
+                        continue;
+                    }
+                };
                 let split_point = subpart.find('/').unwrap();
                 let (first, second) = subpart.split_at(split_point);
                 let ntp_offset = first
@@ -187,7 +209,14 @@ impl FromStr for StatusComment {
                 && part.find('/').is_some()
                 && status_comment.visible_senders.is_none()
             {
-                let subpart = &part[0..part.len() - 9];
+                let subpart = match part.get(..part.len() - 9) {
+                    Some(s) => s,
+                    None => {
+                        unparsed.push(part);
+                        i += 1;
+                        continue;
+                    }
+                };
                 let split_point = subpart.find('/').unwrap();
                 let (first, second) = subpart.split_at(split_point);
                 let visible_senders = first.parse::<u16>().ok();
@@ -206,7 +235,9 @@ impl FromStr for StatusComment {
                 && part.ends_with("s")
                 && status_comment.latency.is_none()
             {
-                let latency = part[4..part.len() - 1].parse::<f32>().ok();
+                let latency = part
+                    .get(4..part.len().saturating_sub(1))
+                    .and_then(|s| s.parse::<f32>().ok());
                 if latency.is_some() {
                     status_comment.latency = latency.and_then(Decimal::from_f32);
                 } else {
@@ -316,7 +347,14 @@ impl FromStr for StatusComment {
                 let prefix_len = if part.starts_with("EGM96:") { 6 } else { 11 }; // "GeoidSepar:" is 11 chars
                 if part.len() >= prefix_len + 2 {
                     // At least prefix + 1 digit + 'm'
-                    let offset_str = &part[prefix_len..part.len() - 1]; // Remove prefix and "m" suffix
+                    let offset_str = match part.get(prefix_len..part.len() - 1) {
+                        Some(s) => s,
+                        None => {
+                            unparsed.push(part);
+                            i += 1;
+                            continue;
+                        }
+                    };
                     if let Ok(offset) = offset_str.parse::<i16>() {
                         status_comment.geoid_offset = Some(offset);
                     } else {
