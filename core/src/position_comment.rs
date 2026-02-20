@@ -200,54 +200,60 @@ impl FromStr for PositionComment {
             // bddddd: barometric pressure (in tenths of millibars/tenths of hPascal)
             } else if idx == 0
                 && part.len() >= 15
-                && &part[3..4] == "/"
+                && part.as_bytes().get(3) == Some(&b'/')
                 && position_comment.wind_direction.is_none()
             {
-                let wind_direction = part[0..3].parse::<u16>().ok();
-                let wind_speed = part[4..7].parse::<u16>().ok();
+                if let (Some(dir_str), Some(spd_str), Some(rest)) =
+                    (part.get(..3), part.get(4..7), part.get(7..))
+                {
+                    let wind_direction = dir_str.parse::<u16>().ok();
+                    let wind_speed = spd_str.parse::<u16>().ok();
 
-                if wind_direction.is_some() && wind_speed.is_some() {
-                    position_comment.wind_direction = wind_direction;
-                    position_comment.wind_speed = wind_speed;
+                    if wind_direction.is_some() && wind_speed.is_some() {
+                        position_comment.wind_direction = wind_direction;
+                        position_comment.wind_speed = wind_speed;
+                    } else {
+                        unparsed.push(part);
+                        continue;
+                    }
+
+                    let pairs = split_letter_number_pairs(rest);
+
+                    // check if any type of data is not in the allowed set or if any type is duplicated
+                    let mut seen = std::collections::HashSet::new();
+                    if pairs
+                        .iter()
+                        .any(|(c, _)| !seen.insert(*c) || !"gtrpPhb".contains(*c))
+                    {
+                        unparsed.push(part);
+                        continue;
+                    }
+
+                    for (c, number) in pairs {
+                        match c {
+                            'g' => position_comment.gust = Some(number as u16),
+                            't' => position_comment.temperature = Some(number as i16),
+                            'r' => position_comment.rainfall_1h = Some(number as u16),
+                            'p' => position_comment.rainfall_24h = Some(number as u16),
+                            'P' => position_comment.rainfall_midnight = Some(number as u16),
+                            'h' => position_comment.humidity = Some(number as u8),
+                            'b' => position_comment.barometric_pressure = Some(number as u32),
+                            _ => unreachable!(),
+                        }
+                    }
                 } else {
                     unparsed.push(part);
-                    continue;
-                }
-
-                let pairs = split_letter_number_pairs(&part[7..]);
-
-                // check if any type of data is not in the allowed set or if any type is duplicated
-                let mut seen = std::collections::HashSet::new();
-                if pairs
-                    .iter()
-                    .any(|(c, _)| !seen.insert(*c) || !"gtrpPhb".contains(*c))
-                {
-                    unparsed.push(part);
-                    continue;
-                }
-
-                for (c, number) in pairs {
-                    match c {
-                        'g' => position_comment.gust = Some(number as u16),
-                        't' => position_comment.temperature = Some(number as i16),
-                        'r' => position_comment.rainfall_1h = Some(number as u16),
-                        'p' => position_comment.rainfall_24h = Some(number as u16),
-                        'P' => position_comment.rainfall_midnight = Some(number as u16),
-                        'h' => position_comment.humidity = Some(number as u8),
-                        'b' => position_comment.barometric_pressure = Some(number as u32),
-                        _ => unreachable!(),
-                    }
                 }
             // Additional precision: !Wab! (can appear anywhere in the comment)
             // a: additional latitude precision
             // b: additional longitude precision
             } else if part.len() == 5
-                && &part[0..2] == "!W"
-                && &part[4..] == "!"
+                && part.starts_with("!W")
+                && part.ends_with('!')
                 && position_comment.additional_precision.is_none()
             {
-                let add_lat = part[2..3].parse::<u8>().ok();
-                let add_lon = part[3..4].parse::<u8>().ok();
+                let add_lat = part.get(2..3).and_then(|s| s.parse::<u8>().ok());
+                let add_lon = part.get(3..4).and_then(|s| s.parse::<u8>().ok());
                 match (add_lat, add_lon) {
                     (Some(add_lat), Some(add_lon)) => {
                         position_comment.additional_precision = Some(AdditionalPrecision {
@@ -265,10 +271,11 @@ impl FromStr for PositionComment {
             // T: no-tracking flag
             // tttt: aircraft type
             // aa: address type
-            } else if part.len() == 10 && &part[0..2] == "id" && position_comment.id.is_none() {
+            } else if part.len() == 10 && part.starts_with("id") && position_comment.id.is_none() {
                 if let (Some(detail), Some(address)) = (
-                    u8::from_str_radix(&part[2..4], 16).ok(),
-                    u32::from_str_radix(&part[4..10], 16).ok(),
+                    part.get(2..4).and_then(|s| u8::from_str_radix(s, 16).ok()),
+                    part.get(4..10)
+                        .and_then(|s| u32::from_str_radix(s, 16).ok()),
                 ) {
                     let address_type = (detail & 0b0000_0011) as u16;
                     let aircraft_type = (detail & 0b_0011_1100) >> 2;
@@ -294,10 +301,11 @@ impl FromStr for PositionComment {
             // tttt: aircraft type
             // aaaaaa: address type
             // rrrr: (reserved)
-            } else if part.len() == 12 && &part[0..2] == "id" && position_comment.id.is_none() {
+            } else if part.len() == 12 && part.starts_with("id") && position_comment.id.is_none() {
                 if let (Some(detail), Some(address)) = (
-                    u16::from_str_radix(&part[2..6], 16).ok(),
-                    u32::from_str_radix(&part[6..12], 16).ok(),
+                    part.get(2..6).and_then(|s| u16::from_str_radix(s, 16).ok()),
+                    part.get(6..12)
+                        .and_then(|s| u32::from_str_radix(s, 16).ok()),
                 ) {
                     let reserved = detail & 0b0000_0000_0000_1111;
                     let address_type = (detail & 0b0000_0011_1111_0000) >> 4;
@@ -351,12 +359,13 @@ impl FromStr for PositionComment {
             // A: horizontal resolution (integer)
             // B: vertical resolution (integer)
             } else if part.len() >= 6
-                && &part[0..3] == "gps"
+                && part.starts_with("gps")
                 && position_comment.gps_quality.is_none()
             {
-                if let Some((first, second)) = part[3..].split_once('x') {
+                let gps_rest = &part[3..]; // safe: "gps" is ASCII
+                if let Some((first, second)) = gps_rest.split_once('x') {
                     if let (Ok(h_res), Ok(v_res)) = (first.parse::<u8>(), second.parse::<u8>()) {
-                        position_comment.gps_quality = Some(part[3..].to_string());
+                        position_comment.gps_quality = Some(gps_rest.to_string());
                         position_comment.gnss_horizontal_resolution = Some(h_res);
                         position_comment.gnss_vertical_resolution = Some(v_res);
                     } else {
@@ -368,7 +377,7 @@ impl FromStr for PositionComment {
             // Flight level: FLxx.yy
             // xx.yy: float value for flight level
             } else if part.len() >= 3
-                && &part[0..2] == "FL"
+                && part.starts_with("FL")
                 && position_comment.flight_level.is_none()
             {
                 if let Ok(flight_level) = part[2..].parse::<f32>() {
@@ -379,7 +388,7 @@ impl FromStr for PositionComment {
             // Software version: sXX.YY
             // XX.YY: float value for software version
             } else if part.len() >= 2
-                && &part[0..1] == "s"
+                && part.starts_with('s')
                 && part[1..].contains('.')
                 && position_comment.software_version.is_none()
             {
@@ -391,7 +400,7 @@ impl FromStr for PositionComment {
             // Hardware version: hXX
             // XX: hexadecimal value for hardware version
             } else if part.len() == 3
-                && &part[0..1] == "h"
+                && part.starts_with('h')
                 && position_comment.hardware_version.is_none()
             {
                 if part[1..3].chars().all(|c| c.is_ascii_hexdigit()) {
@@ -402,7 +411,7 @@ impl FromStr for PositionComment {
             // Original address: rXXXXXX
             // XXXXXX: hex digits for 24 bit address
             } else if part.len() == 7
-                && &part[0..1] == "r"
+                && part.starts_with('r')
                 && position_comment.original_address.is_none()
             {
                 if part[1..7].chars().all(|c| c.is_ascii_hexdigit()) {
@@ -1159,6 +1168,34 @@ mod tests {
         assert_eq!(result.gnss_horizontal_resolution, Some(2));
         assert_eq!(result.gnss_vertical_resolution, Some(3));
         assert_eq!(result.unparsed, None);
+    }
+
+    #[test]
+    fn test_non_ascii_does_not_panic() {
+        // Regression test: an emoji in the comment field caused a panic due to
+        // byte-index slicing into a multi-byte UTF-8 character (e.g. &part[0..2]
+        // on "😀" panics because byte index 2 is inside the 4-byte emoji).
+        let result = "000/000/A=001000 😀".parse::<PositionComment>().unwrap();
+        assert_eq!(result.course, Some(0));
+        assert_eq!(result.speed, Some(0));
+        assert_eq!(result.altitude, Some(1000));
+        assert_eq!(result.unparsed, Some("😀".to_string()));
+
+        // Multi-byte characters that happen to have len() >= 3 (like "FL" check)
+        let result2 = "000/000/A=001000 🎉 café naïve"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result2.unparsed, Some("🎉 café naïve".to_string()));
+
+        // Emoji-only comment should not panic
+        let result3 = "😀".parse::<PositionComment>().unwrap();
+        assert_eq!(result3.unparsed, Some("😀".to_string()));
+
+        // Non-ASCII in model/registration fields should be preserved
+        let result4 = "000/000/A=001000 regHB-müller"
+            .parse::<PositionComment>()
+            .unwrap();
+        assert_eq!(result4.registration, Some("HB-müller".to_string()));
     }
 
     #[test]
